@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<databaseChangeLog>
+	<changeSet author="akiran" id="Creation of test table">
+		<create-table tableName="TEST_COL">
+		</create-table>
+		
+		<create-index indexName="TEST_COL_NAME" tableName="TEST_COL" unique="true">
+			<index-column name="name"/>
+		</create-index>
+	</changeSet>
+	
+	<changeSet author="akiran" id="Adding records to test table">
+		<insert tableName="TEST_COL">
+			<column-value name="name" value="Kranthi"/>
+			<column-value name="lastName" value="Kiran"/>
+			<column-value name="city" value="Hyderabad"/>
+		</insert>
+
+		<insert tableName="TEST_COL">
+			<column-value name="name" value="Pipsy"/>
+			<column-value name="lastName" value="Pipsy"/>
+			<column-value name="city" value="Bangalore"/>
+		</insert>
+
+		<update tableName="TEST_COL">
+			<column-value name="lastName" value="PipsyNew"/>
+			
+			<condition name="name" value="Pipsy"/>
+		</update>
+	</changeSet>
+	
+</databaseChangeLog>
