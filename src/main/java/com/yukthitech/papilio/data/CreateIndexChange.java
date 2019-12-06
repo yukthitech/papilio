@@ -1,9 +1,7 @@
 package com.yukthitech.papilio.data;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,7 +12,7 @@ import com.yukthitech.ccg.xml.util.Validateable;
  * Change which would create a table / collection.
  * @author akiran
  */
-public class CreateIndexChange implements IChange, Validateable
+public class CreateIndexChange extends AbstractOptionBasedChange implements IChange, Validateable
 {
 	/**
 	 * Column to be indexed with details.
@@ -151,11 +149,6 @@ public class CreateIndexChange implements IChange, Validateable
 	private List<IndexColumn> indexColumns = new ArrayList<>();
 	
 	/**
-	 * Helps in specifying custom options while creating index.
-	 */
-	private Map<String, Object> options;
-	
-	/**
 	 * Instantiates a new creates the index change.
 	 */
 	public CreateIndexChange()
@@ -196,71 +189,6 @@ public class CreateIndexChange implements IChange, Validateable
 	public void setTableName(String tableName)
 	{
 		this.tableName = tableName;
-	}
-
-	/**
-	 * Gets the helps in specifying custom options while creating index.
-	 *
-	 * @return the helps in specifying custom options while creating index
-	 */
-	public Map<String, Object> getOptions()
-	{
-		return options;
-	}
-
-	/**
-	 * Sets the helps in specifying custom options while creating index.
-	 *
-	 * @param options the new helps in specifying custom options while creating index
-	 */
-	public void setOptions(Map<String, Object> options)
-	{
-		this.options = options;
-	}
-	
-	/**
-	 * Adds specified option to this change.
-	 * @param name name of option
-	 * @param value value of option.
-	 */
-	private void addOption(String name, Object value)
-	{
-		if(this.options == null)
-		{
-			this.options = new HashMap<>();
-		}
-		
-		this.options.put(name, value);
-	}
-	
-	/**
-	 * Adds specified String option to this change.
-	 * @param name name of option
-	 * @param value value of option.
-	 */
-	public void addStringOption(String name, String value)
-	{
-		this.addOption(name, value);
-	}
-	
-	/**
-	 * Adds specified int option to this change.
-	 * @param name name of option
-	 * @param value value of option.
-	 */
-	public void addIntOption(String name, int value)
-	{
-		this.addOption(name, value);
-	}
-	
-	/**
-	 * Adds specified boolean option to this change.
-	 * @param name name of option
-	 * @param value value of option.
-	 */
-	public void addBooleanOption(String name, boolean value)
-	{
-		this.addOption(name, value);
 	}
 
 	/**

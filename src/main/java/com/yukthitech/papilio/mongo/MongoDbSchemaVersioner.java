@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,11 +24,14 @@ import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.CreateCollectionOptions;
+import com.mongodb.client.model.DeleteOptions;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import com.yukthitech.papilio.IDbSchemaVersioner;
 import com.yukthitech.papilio.InvalidConfigurationException;
 import com.yukthitech.papilio.common.JsonUtils;
@@ -305,8 +309,6 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 	{
 		logger.debug("Updating document in collection: {}", change.getTableName());
 		
-		//TODO: support update options also
-		
 		MongoCollection<Document> collection = getCollection(change.getTableName());
 		
 		List<Bson> updateFields = change.getColumnValues()
@@ -316,9 +318,22 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		Bson updates = Updates.combine(updateFields);
 		Bson filters = toFilters(change.getConditions());
+
+		UpdateResult updateResult = null;
 		
-		Document res = collection.findOneAndUpdate(filters, updates);
-		logger.debug("Result of update is found as: {}", res);
+		if(MapUtils.isNotEmpty(change.getOptions()))
+		{
+			UpdateOptions options = new UpdateOptions();
+			setOptions(options, change.getOptions());
+			
+			updateResult = collection.updateMany(filters, updates, options);
+		}
+		else
+		{
+			updateResult = collection.updateMany(filters, updates);
+		}
+		
+		logger.debug("With update [Matched Count: {}, Updated Count: {}]", updateResult.getMatchedCount(), updateResult.getModifiedCount());
 	}
 	
 	@Override
@@ -329,7 +344,20 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		MongoCollection<Document> collection = getCollection(change.getTableName());
 		Bson filters = toFilters(change.getConditions());
 		
-		DeleteResult res = collection.deleteOne(filters);
+		DeleteResult res = null;
+		
+		if(MapUtils.isNotEmpty(change.getOptions()))
+		{
+			DeleteOptions options = new DeleteOptions();
+			setOptions(options, change.getOptions());
+			
+			res = collection.deleteMany(filters, options);
+		}
+		else
+		{
+			res = collection.deleteMany(filters);	
+		}
+		
 		logger.debug("Number of records deleted: {}", res.getDeletedCount());
 	}
 

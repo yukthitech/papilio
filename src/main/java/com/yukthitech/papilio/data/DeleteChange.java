@@ -12,7 +12,7 @@ import com.yukthitech.ccg.xml.util.Validateable;
  * Change to delete document.
  * @author akiran
  */
-public class DeleteChange implements IChange, Validateable
+public class DeleteChange extends AbstractOptionBasedChange implements IChange, Validateable
 {
 	/**
 	 * Table name from which deletion should be done.

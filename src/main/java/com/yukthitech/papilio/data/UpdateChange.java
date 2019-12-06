@@ -12,7 +12,7 @@ import com.yukthitech.ccg.xml.util.Validateable;
  * Change to insert document.
  * @author akiran
  */
-public class UpdateChange implements IChange, Validateable
+public class UpdateChange extends AbstractOptionBasedChange implements IChange, Validateable
 {
 	/**
 	 * Table name to which insertion should be done.
