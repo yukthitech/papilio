@@ -50,9 +50,6 @@ public class PapilioArguments
 	@CliArgument(name = "cl", longName = "changelog", description = "Change log file to be processed.", required = true)
 	private String changeLogFile;
 	
-	@CliArgument(name = "el", longName = "errorListener", description = "Specifies the error listener for this execution.", required = false)
-	private String errorListener;
-
 	/**
 	 * Gets the db server host.
 	 *
@@ -191,15 +188,5 @@ public class PapilioArguments
 	public void setChangeLogFile(String changeLogFile)
 	{
 		this.changeLogFile = changeLogFile;
-	}
-
-	public String getErrorListener()
-	{
-		return errorListener;
-	}
-
-	public void setErrorListener(String errorListener)
-	{
-		this.errorListener = errorListener;
 	}
 }

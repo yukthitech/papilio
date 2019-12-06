@@ -74,7 +74,7 @@ public class Main
 		return null;
 	}
 	
-	private static boolean executeChangeLog(String verClsName, String verFilePath, PapilioArguments args, IErrorListener errorListener)
+	private static boolean executeChangeLog(String verClsName, String verFilePath, PapilioArguments args, ChangeTracker changeTracker)
 	{
 		IDbSchemaVersioner dbSchemaVersioner = null;
 		
@@ -101,36 +101,20 @@ public class Main
 		try
 		{
 			databaseChangeLog = DatabaseChangeLogFactory.load(changeFile);
+			changeTracker.setTotalCount(databaseChangeLog.getChangeSets().size());
 		}catch(Exception ex)
 		{
 			System.err.println("An error occurred while loading change file: " + changeFile + "\nError: " + ex);
 			System.exit(-1);
 		}
 		
-		DbChangeLogExecutor dbChangeLogExecutor = new DbChangeLogExecutor(databaseChangeLog, dbSchemaVersioner, args, errorListener);
+		DbChangeLogExecutor dbChangeLogExecutor = new DbChangeLogExecutor(databaseChangeLog, dbSchemaVersioner, args, changeTracker);
 		boolean res = dbChangeLogExecutor.execute();
 		
 		return res;
 	}
 	
-	private static IErrorListener buildErrorListener(String listenerName)
-	{
-		if(listenerName == null)
-		{
-			return new DummyErrorListener();
-		}
-		
-		try
-		{
-			Class<?> cls = Class.forName(listenerName);
-			return (IErrorListener) cls.newInstance();
-		}catch(Exception ex)
-		{
-			throw new IllegalStateException("Failed to create error listener of type: " + listenerName, ex);
-		}
-	}
-	
-	public static int execute(String[] args)
+	public static ChangeTracker execute(String[] args)
 	{
 		PapilioArguments argumentBean = loadArguments(args);
 		Properties mappingProp = loadMappingProperties();
@@ -138,21 +122,23 @@ public class Main
 		String dbType = argumentBean.getDbType();
 		String versionCls = mappingProp.getProperty(dbType);
 		
+		ChangeTracker changeTracker = new ChangeTracker();
+		
 		if(versionCls == null)
 		{
 			System.err.println("Invalid db type specified: " + dbType);
-			return -1;
+			changeTracker.setExitCode(-1);
+			return changeTracker;
 		}
 		
-		IErrorListener errorListener = buildErrorListener(argumentBean.getErrorListener());
-		
-		boolean res = executeChangeLog(versionCls, argumentBean.getChangeLogFile(), argumentBean, errorListener);
-		return res ? 0 : -1;
+		boolean res = executeChangeLog(versionCls, argumentBean.getChangeLogFile(), argumentBean, changeTracker);
+		changeTracker.setExitCode(res ? 0 : -1);
+		return changeTracker;
 	}
 
 	public static void main(String[] args)
 	{
-		int res = execute(args);
-		System.exit(res);
+		ChangeTracker tracker = execute(args);
+		System.exit(tracker.getExitCode());
 	}
 }

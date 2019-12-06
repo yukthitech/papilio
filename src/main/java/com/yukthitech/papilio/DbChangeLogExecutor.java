@@ -50,14 +50,14 @@ public class DbChangeLogExecutor
 	
 	private Map<Class<?>, Consumer<Object>> changeTypeToExecutors = new HashMap<>();
 	
-	private IErrorListener errorListener;
+	private ChangeTracker changeTracker;
 
-	public DbChangeLogExecutor(DatabaseChangeLog databaseChangeLog, IDbSchemaVersioner dbSchemaVersioner, PapilioArguments args, IErrorListener errorListener)
+	public DbChangeLogExecutor(DatabaseChangeLog databaseChangeLog, IDbSchemaVersioner dbSchemaVersioner, PapilioArguments args, ChangeTracker changeTracker)
 	{
 		this.databaseChangeLog = databaseChangeLog;
 		this.dbSchemaVersioner = dbSchemaVersioner;
 		this.args = args;
-		this.errorListener = errorListener;
+		this.changeTracker = changeTracker;
 		
 		addExecutor(CreateIndexChange.class, dbSchemaVersioner::createIndex);
 		addExecutor(CreateTableChange.class, dbSchemaVersioner::createTable);
@@ -82,7 +82,7 @@ public class DbChangeLogExecutor
 
 		if(!lock())
 		{
-			errorListener.onError(null, IErrorListener.LOCK_FAILED);
+			changeTracker.erroredChangeset(null, ChangeTracker.LOCK_FAILED);
 			return false;
 		}
 		
@@ -166,13 +166,14 @@ public class DbChangeLogExecutor
 						+ "\n\tNew Checksum: %s", changeSet.getId(), oldChecksum, newChecksum);
 				
 				logger.error(errMssg);
-				errorListener.onError(changeSet.getId(), errMssg);
+				changeTracker.erroredChangeset(changeSet.getId(), errMssg);
 				
 				dbSchemaVersioner.close();
 				return false;
 			}
 			
 			logger.trace("Skipping changeset as it was already executed: {}", changeSet.getId());
+			changeTracker.skippingChangeset(changeSet.getId());
 			return true;
 		}
 		
@@ -201,6 +202,9 @@ public class DbChangeLogExecutor
 			.addColumnValue(new ColumnValue("FILE_NAME", changeSet.getFileName()));
 		
 		dbSchemaVersioner.insert(insertChange);
+		
+		changeTracker.executedChangeset(changeSet.getId());
+		
 		return true;
 	}
 }

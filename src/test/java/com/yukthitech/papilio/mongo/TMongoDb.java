@@ -16,6 +16,7 @@ import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.yukthitech.papilio.ChangeTracker;
 import com.yukthitech.papilio.Main;
 
 /**
@@ -84,7 +85,7 @@ public class TMongoDb
 	@Test
 	public void testBasicWorking()
 	{
-		int res = Main.execute(new String[] {
+		ChangeTracker tracker = Main.execute(new String[] {
 			"--host", "localhost",
 			"--port", "27017",
 			"--database", "weaver",
@@ -92,13 +93,16 @@ public class TMongoDb
 			"--dbtype", "mongo"
 		});
 		
-		Assert.assertEquals(res, 0);
+		Assert.assertEquals(tracker.getExitCode(), 0);
+		Assert.assertEquals(tracker.getTotalCount(), 2);
+		Assert.assertEquals(tracker.getExecutedCount(), 2);
+		Assert.assertEquals(tracker.getSkipCount(), 0);
 	}
 	
 	@Test(dependsOnMethods = "testBasicWorking")
 	public void testReexecute()
 	{
-		int res = Main.execute(new String[] {
+		ChangeTracker tracker = Main.execute(new String[] {
 				"--host", "localhost",
 				"--port", "27017",
 				"--database", "weaver",
@@ -106,7 +110,10 @@ public class TMongoDb
 				"--dbtype", "mongo"
 			});
 		
-		Assert.assertEquals(res, 0);
+		Assert.assertEquals(tracker.getExitCode(), 0);
+		Assert.assertEquals(tracker.getTotalCount(), 2);
+		Assert.assertEquals(tracker.getExecutedCount(), 0);
+		Assert.assertEquals(tracker.getSkipCount(), 2);
 	}
 	
 	@AfterClass
