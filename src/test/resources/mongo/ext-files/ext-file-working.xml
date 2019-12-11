@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<databaseChangeLog>
+	<changeSet author="akiran" id="Creation of doc table">
+		<create-table tableName="TEST_DOC">
+		</create-table>
+	</changeSet>
+	
+	<changeSet author="akiran" id="Adding records to doc table">
+		<insert tableName="TEST_DOC">
+			<column-value name="name" value="file1"/>
+			<column-value name="content" valueFromFile="file1.txt"/>
+		</insert>
+
+		<insert tableName="TEST_DOC">
+			<column-value name="name" value="file2"/>
+			<column-value name="content" valueFromFile="file2.txt"/>
+		</insert>
+	</changeSet>
+	
+</databaseChangeLog>

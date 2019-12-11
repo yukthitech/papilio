@@ -112,7 +112,8 @@ public class ColumnValue implements Validateable
 	 */
 	public void setValueFromFile(String file)
 	{
-		File fileObj = new File(file);
+		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
+		File fileObj = new File(parentFile, file);
 		
 		if(!fileObj.exists())
 		{

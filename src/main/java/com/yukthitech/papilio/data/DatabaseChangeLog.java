@@ -9,8 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
 import com.yukthitech.papilio.InvalidConfigurationException;
@@ -25,7 +23,7 @@ public class DatabaseChangeLog implements Validateable
 	/**
 	 * File from which this log is being loaded.
 	 */
-	private String fileName;
+	private File file;
 	
 	/**
 	 * List of changesets to be executed.
@@ -37,14 +35,14 @@ public class DatabaseChangeLog implements Validateable
 	 */
 	private Set<String> changesetIds = new HashSet<>();
 	
-	public DatabaseChangeLog(String fileName)
+	public DatabaseChangeLog(File file)
 	{
-		if(StringUtils.isBlank(fileName))
+		if(file == null)
 		{
-			throw new InvalidArgumentException("File name cannot not be null or empty");
+			throw new InvalidArgumentException("File cannot not be null or empty");
 		}
 		
-		this.fileName = fileName;
+		this.file = file;
 	}
 
 	/**
@@ -58,7 +56,7 @@ public class DatabaseChangeLog implements Validateable
 			throw new NullPointerException("Include can not be null");
 		}
 		
-		DatabaseChangeLog logFromInclude = DatabaseChangeLogFactory.load( new File(include.getPath()) );
+		DatabaseChangeLog logFromInclude = DatabaseChangeLogFactory.load( new File(file.getParentFile(), include.getPath()) );
 		this.changeSets.addAll(logFromInclude.changeSets);
 	}
 	
@@ -79,7 +77,7 @@ public class DatabaseChangeLog implements Validateable
 			throw new InvalidConfigurationException("Duplicate changeset id encountered: {}", changeSet.getId());
 		}
 		
-		changeSet.setFileName(fileName);
+		changeSet.setFileName(file.getName());
 		this.changeSets.add(changeSet);
 		this.changesetIds.add(changeSet.getId());
 	}
@@ -99,7 +97,7 @@ public class DatabaseChangeLog implements Validateable
 	{
 		if(changeSets.isEmpty())
 		{
-			throw new ValidateException("Changesets is empty from file: " + fileName);
+			throw new ValidateException("Changesets is empty from file: " + file.getName());
 		}
 	}
 }

@@ -341,21 +341,27 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 	{
 		logger.debug("Deleting document(s) from collection: {}", change.getTableName());
 		
-		MongoCollection<Document> collection = getCollection(change.getTableName());
-		Bson filters = toFilters(change.getConditions());
-		
 		DeleteResult res = null;
 		
-		if(MapUtils.isNotEmpty(change.getOptions()))
+		try
 		{
-			DeleteOptions options = new DeleteOptions();
-			setOptions(options, change.getOptions());
+			MongoCollection<Document> collection = getCollection(change.getTableName());
+			Bson filters = toFilters(change.getConditions());
 			
-			res = collection.deleteMany(filters, options);
-		}
-		else
+			if(MapUtils.isNotEmpty(change.getOptions()))
+			{
+				DeleteOptions options = new DeleteOptions();
+				setOptions(options, change.getOptions());
+				
+				res = collection.deleteMany(filters, options);
+			}
+			else
+			{
+				res = collection.deleteMany(filters);	
+			}
+		}catch(Throwable ex)
 		{
-			res = collection.deleteMany(filters);	
+			ex.printStackTrace();
 		}
 		
 		logger.debug("Number of records deleted: {}", res.getDeletedCount());

@@ -167,8 +167,6 @@ public class DbChangeLogExecutor
 				
 				logger.error(errMssg);
 				changeTracker.erroredChangeset(changeSet.getId(), errMssg);
-				
-				dbSchemaVersioner.close();
 				return false;
 			}
 			

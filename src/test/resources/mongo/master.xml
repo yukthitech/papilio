@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<databaseChangeLog>
+	<include path="basic-working.xml"/>
+	<include path="ext-files/ext-file-working.xml"/>	
+</databaseChangeLog>
