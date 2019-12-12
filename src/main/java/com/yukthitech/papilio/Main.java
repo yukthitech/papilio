@@ -4,6 +4,10 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.yukthitech.papilio.common.PapilioArguments;
 import com.yukthitech.papilio.data.DatabaseChangeLog;
 import com.yukthitech.papilio.data.DatabaseChangeLogFactory;
@@ -17,6 +21,8 @@ import com.yukthitech.utils.cli.OptionsFactory;
  */
 public class Main
 {
+	private static Logger logger = LogManager.getLogger(Main.class);
+	
 	private static final String COMMAND_SYNTAX = String.format("java %s args...", Main.class.getName());
 	
 	/**
@@ -104,7 +110,8 @@ public class Main
 			changeTracker.setTotalCount(databaseChangeLog.getChangeSets().size());
 		}catch(Exception ex)
 		{
-			System.err.println("An error occurred while loading change file: " + changeFile + "\nError: " + ex);
+			System.err.println("An error occurred while loading change file: " + changeFile);
+			ex.printStackTrace();
 			System.exit(-1);
 		}
 		
@@ -120,6 +127,8 @@ public class Main
 		Properties mappingProp = loadMappingProperties();
 		
 		String dbType = argumentBean.getDbType();
+		
+		logger.debug("Using database type: {}", dbType);
 		String versionCls = mappingProp.getProperty(dbType);
 		
 		ChangeTracker changeTracker = new ChangeTracker();
@@ -130,7 +139,16 @@ public class Main
 			changeTracker.setExitCode(-1);
 			return changeTracker;
 		}
-		
+
+		try
+		{
+			String logo = IOUtils.toString(Main.class.getResourceAsStream("/logo.txt"));
+			System.out.println(logo);
+		}catch(Exception ex)
+		{
+			//ignore
+		}
+
 		boolean res = executeChangeLog(versionCls, argumentBean.getChangeLogFile(), argumentBean, changeTracker);
 		changeTracker.setExitCode(res ? 0 : -1);
 		return changeTracker;
