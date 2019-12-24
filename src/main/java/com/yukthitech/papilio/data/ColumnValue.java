@@ -129,6 +129,26 @@ public class ColumnValue implements Validateable
 		}
 	}
 	
+	public void setJsonFromFile(String file)
+	{
+		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
+		File fileObj = new File(parentFile, file);
+		
+		if(!fileObj.exists())
+		{
+			throw new InvalidArgumentException("Invalid/non-existing file specified: {}", file);
+		}
+		
+		try
+		{
+			String fileContent = FileUtils.readFileToString(fileObj);
+			value = JsonUtils.parseJson(fileContent);
+		}catch(Exception ex)
+		{
+			throw new InvalidStateException("Failed to load json content from file: {}", file);
+		}
+	}
+
 	/**
 	 * Sets the json value.
 	 *

@@ -175,7 +175,7 @@ public class DbChangeLogExecutor
 			return true;
 		}
 		
-		logger.info("*****Executing changeset: {}", changeSet.getId());
+		logger.info("*****  Executing changeset: {}  *****", changeSet.getId());
 		List<IChange> changes = changeSet.getChanges();
 		
 		for(IChange change : changes)

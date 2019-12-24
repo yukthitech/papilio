@@ -215,13 +215,15 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 			setOptions(createIndexOptions, options);
 		}
 		
+		if(createIndexOptions == null)
+		{
+			createIndexOptions = new IndexOptions();
+		}
+		
+		createIndexOptions.name(indexChange.getIndexName());
+		
 		if(indexChange.isUnique())
 		{
-			if(createIndexOptions == null)
-			{
-				createIndexOptions = new IndexOptions();
-			}
-			
 			createIndexOptions.unique(true);
 		}
 		
@@ -244,14 +246,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 			indexCols.add(Indexes.descending(col.getName()));
 		}
 		
-		if(createIndexOptions != null)
-		{
-			collection.createIndex(Indexes.compoundIndex(indexCols), createIndexOptions);
-		}
-		else
-		{
-			collection.createIndex(Indexes.compoundIndex(indexCols));
-		}
+		collection.createIndex(Indexes.compoundIndex(indexCols), createIndexOptions);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
