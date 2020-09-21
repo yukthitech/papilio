@@ -2,10 +2,13 @@ package com.yukthitech.papilio.mongo;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -43,6 +46,7 @@ import com.yukthitech.papilio.data.DeleteChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
 import com.yukthitech.papilio.data.UpdateChange;
+import com.yukthitech.utils.exceptions.InvalidArgumentException;
 import com.yukthitech.utils.exceptions.InvalidStateException;
 
 /**
@@ -52,6 +56,11 @@ import com.yukthitech.utils.exceptions.InvalidStateException;
 public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 {
 	private static Logger logger = LogManager.getLogger(MongoDbSchemaVersioner.class);
+
+	/**
+	 * The Constant HOST_PORT.
+	 */
+	private static final Pattern HOST_PORT = Pattern.compile("([\\w\\.\\-]+)\\:(\\d+)");
 	
 	/**
 	 * Mongo client connection.
@@ -71,8 +80,25 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		String database = args.getDbname();
 		
 		MongoCredential credential = (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password)) ? MongoCredential.createCredential(user, database, password.toCharArray()) : null;
+		List<ServerAddress> mongoHosts = null;
+
 		String host = args.getHost();
 		int port = args.getPort();
+		String replicas = args.getReplicas();
+		
+		if(StringUtils.isNotBlank(replicas))
+		{
+			mongoHosts = parse(replicas);
+		}
+		else if(StringUtils.isNotBlank(host) && port > 0)
+		{
+			replicas = host + ":" + port;
+			mongoHosts = Arrays.asList(new ServerAddress(host, port));
+		}
+		else
+		{
+			throw new InvalidArgumentException("Both replicas and host details are not specified.");
+		}
 		
 		MongoClientOptions clientOptions = MongoClientOptions.builder()
 				.writeConcern(WriteConcern.ACKNOWLEDGED)
@@ -80,16 +106,36 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 				
 		if(credential != null)
 		{
-			this.mongoClient = new MongoClient(new ServerAddress(host, port), credential, clientOptions);
+			this.mongoClient = new MongoClient(mongoHosts, credential, clientOptions);
 		}
 		else
 		{
-			this.mongoClient = new MongoClient(new ServerAddress(host, port), clientOptions);
+			this.mongoClient = new MongoClient(mongoHosts, clientOptions);
 		}
 		
 		this.database = mongoClient.getDatabase(database);
 		
-		logger.debug("Connecting to {}:{} successfully", host, port);
+		logger.debug("Connected to mongocluster {} successfully", replicas);
+	}
+	
+	private List<ServerAddress> parse(String replicas)
+	{
+		String lst[] = replicas.trim().split("\\s*\\,\\s*");
+		List<ServerAddress> serverAddresses = new ArrayList<>();
+		
+		for(String item : lst)
+		{
+			Matcher matcher = HOST_PORT.matcher(item);
+			
+			if(!matcher.matches())
+			{
+				throw new InvalidArgumentException("Invalid mongo host-port combination specified. It should be of format host:port. Specified Replicas: {}", replicas);
+			}
+			
+			serverAddresses.add(new ServerAddress(matcher.group(1), Integer.parseInt(matcher.group(2))));
+		}
+		
+		return serverAddresses;
 	}
 	
 	private MongoCollection<Document> getCollection(String name)
