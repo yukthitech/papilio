@@ -106,14 +106,14 @@ public class TMongoDb
 		ChangeTracker tracker = Main.execute(new String[] {
 			"--host", "localhost",
 			"--port", "27017",
-			"--database", "weaver",
+			"--database", "test",
 			"--changelog", "./src/test/resources/mongo/basic-working.xml",
 			"--dbtype", "mongo"
 		});
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);
-		Assert.assertEquals(tracker.getTotalCount(), 2);
-		Assert.assertEquals(tracker.getExecutedCount(), 2);
+		Assert.assertEquals(tracker.getTotalCount(), 3);
+		Assert.assertEquals(tracker.getExecutedCount(), 3);
 		Assert.assertEquals(tracker.getSkipCount(), 0);
 		
 		//ensure db is updated with right records
@@ -128,7 +128,7 @@ public class TMongoDb
 			actual.add( doc.getString("name") + "-" + doc.getString("lastName"));
 		}
 		
-		Assert.assertEquals(actual, CommonUtils.toSet("Kranthi-Kiran", "Pipsy-PipsyNew"));
+		Assert.assertEquals(actual, CommonUtils.toSet("Kranthi-Kiran", "Pipsy-PipsyPostDel"));
 	}
 	
 	/**
@@ -140,15 +140,15 @@ public class TMongoDb
 		ChangeTracker tracker = Main.execute(new String[] {
 				"--host", "localhost",
 				"--port", "27017",
-				"--database", "weaver",
+				"--database", "test",
 				"--changelog", "./src/test/resources/mongo/basic-working.xml",
 				"--dbtype", "mongo"
 			});
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);
-		Assert.assertEquals(tracker.getTotalCount(), 2);
+		Assert.assertEquals(tracker.getTotalCount(), 3);
 		Assert.assertEquals(tracker.getExecutedCount(), 0);
-		Assert.assertEquals(tracker.getSkipCount(), 2);
+		Assert.assertEquals(tracker.getSkipCount(), 3);
 	}
 	
 	/**
@@ -160,7 +160,7 @@ public class TMongoDb
 		ChangeTracker tracker = Main.execute(new String[] {
 				"--host", "localhost",
 				"--port", "27017",
-				"--database", "weaver",
+				"--database", "test",
 				"--changelog", "./src/test/resources/mongo/copy/basic-working.xml",
 				"--dbtype", "mongo"
 			});
@@ -185,15 +185,15 @@ public class TMongoDb
 		ChangeTracker tracker = Main.execute(new String[] {
 				"--host", "localhost",
 				"--port", "27017",
-				"--database", "weaver",
+				"--database", "test",
 				"--changelog", "./src/test/resources/mongo/master.xml",
 				"--dbtype", "mongo"
 			});
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);
-		Assert.assertEquals(tracker.getTotalCount(), 4);
+		Assert.assertEquals(tracker.getTotalCount(), 5);
 		Assert.assertEquals(tracker.getExecutedCount(), 2);
-		Assert.assertEquals(tracker.getSkipCount(), 2);
+		Assert.assertEquals(tracker.getSkipCount(), 3);
 		Assert.assertNull(tracker.getErroredChangesetId());
 
 		//ensure db is updated with right records

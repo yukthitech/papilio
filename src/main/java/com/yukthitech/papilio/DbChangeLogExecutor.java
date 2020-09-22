@@ -64,6 +64,7 @@ public class DbChangeLogExecutor
 		addExecutor(InsertChange.class, dbSchemaVersioner::insert);
 		addExecutor(UpdateChange.class, dbSchemaVersioner::update);
 		addExecutor(QueryChange.class, dbSchemaVersioner::executQuery);
+		addExecutor(DeleteChange.class, dbSchemaVersioner::delete);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -191,6 +192,8 @@ public class DbChangeLogExecutor
 				throw ex;
 			}
 		}
+		
+		logger.info("#####  End of changeset: {}  #####", changeSet.getId());
 		
 		InsertChange insertChange = new InsertChange();
 		insertChange.setTableName(DBLOG_COLLECTION);

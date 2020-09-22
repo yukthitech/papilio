@@ -29,4 +29,16 @@
 		</update>
 	</changeSet>
 	
+	<changeSet author="akiran" id="Deleting and making re-entry">
+		<delete tableName="TEST_COL">
+			<condition name="name" value="Pipsy"/>
+		</delete>
+	
+		<insert tableName="TEST_COL">
+			<column-value name="name" value="Pipsy"/>
+			<column-value name="lastName" value="PipsyPostDel"/>
+			<column-value name="city" value="Bangalore"/>
+		</insert>
+	</changeSet>
+
 </databaseChangeLog>
