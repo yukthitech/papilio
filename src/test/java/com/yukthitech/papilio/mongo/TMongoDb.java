@@ -66,6 +66,7 @@ public class TMongoDb
 		MongoCollection<Document> changeLogCol =  database.getCollection("DATABASE_CHANGE_LOG");
 		MongoCollection<Document> lockCol =  database.getCollection("DATABASE_CHANGE_LOG_LOCK");
 		MongoCollection<Document> testCol =  database.getCollection("TEST_COL");
+		MongoCollection<Document> testCol2 =  database.getCollection("TEST_COL2");
 		MongoCollection<Document> testDocCol =  database.getCollection("TEST_DOC");
 		
 		if(changeLogCol != null)
@@ -91,6 +92,12 @@ public class TMongoDb
 			logger.debug("Dropping test doc table..");
 			testDocCol.drop();
 		}
+
+		if(testCol2 != null)
+		{
+			logger.debug("Dropping test doc table..");
+			testCol2.drop();
+		}
 	}
 
 	/**
@@ -112,8 +119,8 @@ public class TMongoDb
 		});
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);
-		Assert.assertEquals(tracker.getTotalCount(), 3);
-		Assert.assertEquals(tracker.getExecutedCount(), 3);
+		Assert.assertEquals(tracker.getTotalCount(), 4);
+		Assert.assertEquals(tracker.getExecutedCount(), 4);
 		Assert.assertEquals(tracker.getSkipCount(), 0);
 		
 		//ensure db is updated with right records
@@ -146,9 +153,9 @@ public class TMongoDb
 			});
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);
-		Assert.assertEquals(tracker.getTotalCount(), 3);
+		Assert.assertEquals(tracker.getTotalCount(), 4);
 		Assert.assertEquals(tracker.getExecutedCount(), 0);
-		Assert.assertEquals(tracker.getSkipCount(), 3);
+		Assert.assertEquals(tracker.getSkipCount(), 4);
 	}
 	
 	/**
@@ -191,9 +198,9 @@ public class TMongoDb
 			});
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);
-		Assert.assertEquals(tracker.getTotalCount(), 5);
+		Assert.assertEquals(tracker.getTotalCount(), 6);
 		Assert.assertEquals(tracker.getExecutedCount(), 2);
-		Assert.assertEquals(tracker.getSkipCount(), 3);
+		Assert.assertEquals(tracker.getSkipCount(), 4);
 		Assert.assertNull(tracker.getErroredChangesetId());
 
 		//ensure db is updated with right records

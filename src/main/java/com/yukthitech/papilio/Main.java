@@ -2,6 +2,7 @@ package com.yukthitech.papilio;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.Properties;
 
 import org.apache.commons.io.IOUtils;
@@ -142,7 +143,7 @@ public class Main
 
 		try
 		{
-			String logo = IOUtils.toString(Main.class.getResourceAsStream("/logo.txt"));
+			String logo = IOUtils.toString(Main.class.getResourceAsStream("/logo.txt"), Charset.defaultCharset());
 			System.out.println(logo);
 		}catch(Exception ex)
 		{

@@ -4,6 +4,9 @@
 		<create-table tableName="TEST_COL">
 		</create-table>
 		
+		<create-table tableName="TEST_COL2">
+		</create-table>
+
 		<create-index indexName="TEST_COL_NAME" tableName="TEST_COL" unique="true">
 			<index-column name="name"/>
 		</create-index>
@@ -27,6 +30,21 @@
 			
 			<condition name="name" value="Pipsy"/>
 		</update>
+	</changeSet>
+	
+	<changeSet author="akiran" id="Adding records to TEST_COL2 using subquery">
+		<insert tableName="TEST_COL2">
+			<column-value name="name" value="Kranthi"/>
+			<column-value name="testColId">
+				<valueQuery>
+					{
+						"find": "TEST_COL",
+						"filter": {"name": "Kranthi"},
+						"projection": {"_id": 1}
+					}
+				</valueQuery>
+			</column-value>
+		</insert>
 	</changeSet>
 	
 	<changeSet author="akiran" id="Deleting and making re-entry">

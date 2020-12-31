@@ -1,10 +1,18 @@
 package com.yukthitech.papilio.data;
 
 import java.io.File;
+import java.nio.charset.Charset;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.jxpath.JXPathContext;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.MongoDatabase;
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
 import com.yukthitech.papilio.common.JsonUtils;
@@ -17,6 +25,17 @@ import com.yukthitech.utils.exceptions.InvalidStateException;
  */
 public class ColumnValue implements Validateable
 {
+	
+	/**
+	 * The logger.
+	 */
+	private static Logger logger = LogManager.getLogger(ColumnValue.class);
+	
+	/**
+	 * Used to subquery json.
+	 */
+	private static ObjectMapper objectMapper = new ObjectMapper();
+	
 	/**
 	 * Column name.
 	 */
@@ -26,6 +45,21 @@ public class ColumnValue implements Validateable
 	 * Value for the column.
 	 */
 	private Object value;
+	
+	/**
+	 * Subquery to be used to fetch the value for this column.
+	 */
+	private String valueQuery;
+	
+	/**
+	 * Property to be used to fetch the final value from the result of value query.
+	 */
+	private String valueQueryPath = "/cursor/firstBatch//_id/*[1]";
+	
+	/**
+	 * Flag indicating if value-query-path infers multiple values or single value.
+	 */
+	private boolean multiValued = false;
 	
 	/**
 	 * Instantiates a new column value.
@@ -66,13 +100,66 @@ public class ColumnValue implements Validateable
 	}
 	
 	/**
+	 * Gets the value from query.
+	 *
+	 * @param database the database
+	 * @return the value from query
+	 */
+	private Object getValueFromQuery(MongoDatabase database)
+	{
+		if(valueQuery == null)
+		{
+			return null;
+		}
+		
+		try
+		{
+			Document bsonQueryDoc = Document.parse(valueQuery);
+			String resultJson = database.runCommand(bsonQueryDoc).toJson();
+			
+			Object result = objectMapper.readValue(resultJson, Object.class);
+			
+			logger.debug("Got result of subquery as: {}", result);
+			
+			if(valueQueryPath != null)
+			{
+				if(multiValued)
+				{
+					result = JXPathContext.newContext(result).selectNodes(valueQueryPath);
+				}
+				else
+				{
+					result = JXPathContext.newContext(result).getValue(valueQueryPath);
+				}
+				
+				if(result instanceof ObjectId)
+				{
+					result = ((ObjectId) result).toString();
+				}
+			}
+			
+			return result;
+			
+		}catch(Exception ex)
+		{
+			throw new InvalidStateException("An error occurred while processing value-query for column '{}'. Value-query-path: {}, Query:\n{}", 
+					name, valueQueryPath, valueQuery, ex);
+		}
+	}
+	
+	/**
 	 * Gets the value for the column.
 	 *
 	 * @return the value for the column
 	 */
-	public Object getValue()
+	public Object getValue(MongoDatabase database)
 	{
-		return value;
+		if(value != null)
+		{
+			return value;
+		}
+		
+		return getValueFromQuery(database);
 	}
 	
 	/**
@@ -106,6 +193,46 @@ public class ColumnValue implements Validateable
 	}
 	
 	/**
+	 * Gets the subquery to be used to fetch the value for this column.
+	 *
+	 * @return the subquery to be used to fetch the value for this column
+	 */
+	public String getValueQuery()
+	{
+		return valueQuery;
+	}
+
+	/**
+	 * Sets the subquery to be used to fetch the value for this column.
+	 *
+	 * @param valueQuery the new subquery to be used to fetch the value for this column
+	 */
+	public void setValueQuery(String valueQuery)
+	{
+		this.valueQuery = valueQuery;
+	}
+
+	/**
+	 * Sets the property to be used to fetch the final value from the result of value query.
+	 *
+	 * @param valueQueryPath the new property to be used to fetch the final value from the result of value query
+	 */
+	public void setValueQueryPath(String valueQueryPath)
+	{
+		this.valueQueryPath = valueQueryPath;
+	}
+
+	/**
+	 * Sets the flag indicating if value-query-path infers multiple values or single value.
+	 *
+	 * @param multiValued the new flag indicating if value-query-path infers multiple values or single value
+	 */
+	public void setMultiValued(boolean multiValued)
+	{
+		this.multiValued = multiValued;
+	}
+
+	/**
 	 * Sets the value from file.
 	 *
 	 * @param file the new value from file
@@ -122,13 +249,18 @@ public class ColumnValue implements Validateable
 		
 		try
 		{
-			this.value = FileUtils.readFileToString(fileObj);
+			this.value = FileUtils.readFileToString(fileObj, Charset.defaultCharset());
 		}catch(Exception ex)
 		{
 			throw new InvalidStateException("Failed to load text content from file: {}", file);
 		}
 	}
 	
+	/**
+	 * Sets the json from file.
+	 *
+	 * @param file the new json from file
+	 */
 	public void setJsonFromFile(String file)
 	{
 		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
@@ -141,7 +273,7 @@ public class ColumnValue implements Validateable
 		
 		try
 		{
-			String fileContent = FileUtils.readFileToString(fileObj);
+			String fileContent = FileUtils.readFileToString(fileObj, Charset.defaultCharset());
 			value = JsonUtils.parseJson(fileContent);
 		}catch(Exception ex)
 		{
@@ -159,6 +291,11 @@ public class ColumnValue implements Validateable
 		this.value = JsonUtils.parseJson(json);
 	}
 	
+	/**
+	 * Validate.
+	 *
+	 * @throws ValidateException the validate exception
+	 */
 	/* (non-Javadoc)
 	 * @see com.yukthitech.ccg.xml.util.Validateable#validate()
 	 */

@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.mongodb.client.MongoDatabase;
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
 
@@ -93,13 +94,13 @@ public class InsertChange implements IChange, Validateable
 		return this;
 	}
 	
-	public Map<String, Object> getColumnMap()
+	public Map<String, Object> getColumnMap(MongoDatabase database)
 	{
 		Map<String, Object> map = new HashMap<>();
 		
 		for(ColumnValue colVal : this.columnValues)
 		{
-			map.put(colVal.getName(), colVal.getValue());
+			map.put(colVal.getName(), colVal.getValue(database));
 		}
 		
 		return map;

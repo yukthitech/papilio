@@ -326,7 +326,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		logger.debug("Inserting document into collection: {}", change.getTableName());
 		
 		MongoCollection<Document> collection = getCollection(change.getTableName());
-		Document insertDoc = toDoc(change.getColumnMap());
+		Document insertDoc = toDoc(change.getColumnMap(database));
 		
 		collection.insertOne(insertDoc);
 	}
@@ -339,7 +339,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		}
 		
 		List<Bson> condLst =  conditions.stream()
-			.map(cond -> Filters.eq(cond.getName(), cond.getValue()))
+			.map(cond -> Filters.eq(cond.getName(), cond.getValue(database)))
 			.collect(Collectors.toList());
 		
 		return Filters.and(condLst);
@@ -354,7 +354,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		List<Bson> updateFields = change.getColumnValues()
 			.stream()
-			.map(colVal -> Updates.set(colVal.getName(), colVal.getValue()))
+			.map(colVal -> Updates.set(colVal.getName(), colVal.getValue(database)))
 			.collect(Collectors.toList());
 		
 		Bson updates = Updates.combine(updateFields);

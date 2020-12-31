@@ -4,6 +4,9 @@
 		<create-table tableName="TEST_COL">
 		</create-table>
 		
+		<create-table tableName="TEST_COL2">
+		</create-table>
+
 		<create-index indexName="TEST_COL_NAME" tableName="TEST_COL" unique="true">
 			<index-column name="name"/>
 		</create-index>
