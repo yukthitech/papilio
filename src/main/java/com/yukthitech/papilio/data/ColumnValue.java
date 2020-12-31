@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoDatabase;
 import com.yukthitech.ccg.xml.util.ValidateException;
@@ -49,17 +50,20 @@ public class ColumnValue implements Validateable
 	/**
 	 * Subquery to be used to fetch the value for this column.
 	 */
+	@JsonInclude(value = JsonInclude.Include.NON_NULL)
 	private String valueQuery;
 	
 	/**
 	 * Property to be used to fetch the final value from the result of value query.
 	 */
-	private String valueQueryPath = "/cursor/firstBatch//_id/*[1]";
+	@JsonInclude(value = JsonInclude.Include.NON_NULL)
+	private String valueQueryPath;
 	
 	/**
 	 * Flag indicating if value-query-path infers multiple values or single value.
 	 */
-	private boolean multiValued = false;
+	@JsonInclude(value = JsonInclude.Include.NON_NULL)
+	private Boolean multiValued;
 	
 	/**
 	 * Instantiates a new column value.
@@ -107,7 +111,8 @@ public class ColumnValue implements Validateable
 	 */
 	private Object getValueFromQuery(MongoDatabase database)
 	{
-		if(valueQuery == null)
+		//database can be null, when old methods are called (which was added for backward compatibility)
+		if(valueQuery == null || database == null)
 		{
 			return null;
 		}
@@ -123,7 +128,7 @@ public class ColumnValue implements Validateable
 			
 			if(valueQueryPath != null)
 			{
-				if(multiValued)
+				if(Boolean.TRUE.equals(multiValued))
 				{
 					result = JXPathContext.newContext(result).selectNodes(valueQueryPath);
 				}
@@ -170,6 +175,16 @@ public class ColumnValue implements Validateable
 	public void setValue(String value)
 	{
 		this.value = value;
+	}
+	
+	/**
+	 * Gets the value for the column.
+	 *
+	 * @return the value for the column
+	 */
+	public Object getValue()
+	{
+		return value;
 	}
 	
 	/**
@@ -221,6 +236,16 @@ public class ColumnValue implements Validateable
 	{
 		this.valueQueryPath = valueQueryPath;
 	}
+	
+	/**
+	 * Gets the property to be used to fetch the final value from the result of value query.
+	 *
+	 * @return the property to be used to fetch the final value from the result of value query
+	 */
+	public String getValueQueryPath()
+	{
+		return valueQueryPath;
+	}
 
 	/**
 	 * Sets the flag indicating if value-query-path infers multiple values or single value.
@@ -230,6 +255,16 @@ public class ColumnValue implements Validateable
 	public void setMultiValued(boolean multiValued)
 	{
 		this.multiValued = multiValued;
+	}
+	
+	/**
+	 * Gets the flag indicating if value-query-path infers multiple values or single value.
+	 *
+	 * @return the flag indicating if value-query-path infers multiple values or single value
+	 */
+	public Boolean getMultiValued()
+	{
+		return multiValued;
 	}
 
 	/**

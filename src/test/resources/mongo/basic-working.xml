@@ -35,7 +35,7 @@
 	<changeSet author="akiran" id="Adding records to TEST_COL2 using subquery">
 		<insert tableName="TEST_COL2">
 			<column-value name="name" value="Kranthi"/>
-			<column-value name="testColId">
+			<column-value name="testColId" valueQueryPath="/cursor/firstBatch//_id/*[1]">
 				<valueQuery>
 					{
 						"find": "TEST_COL",

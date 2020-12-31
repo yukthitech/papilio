@@ -94,6 +94,15 @@ public class InsertChange implements IChange, Validateable
 		return this;
 	}
 	
+	/**
+	 * Added for backward compatibility of checksum calculation.
+	 * @return
+	 */
+	public Map<String, Object> getColumnMap()
+	{
+		return getColumnMap(null);
+	}
+	
 	public Map<String, Object> getColumnMap(MongoDatabase database)
 	{
 		Map<String, Object> map = new HashMap<>();
