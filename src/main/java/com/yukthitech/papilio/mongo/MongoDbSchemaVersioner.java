@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,11 +44,13 @@ import com.yukthitech.papilio.data.ColumnValue;
 import com.yukthitech.papilio.data.CreateIndexChange;
 import com.yukthitech.papilio.data.CreateTableChange;
 import com.yukthitech.papilio.data.DeleteChange;
+import com.yukthitech.papilio.data.FindAndUpdateChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
 import com.yukthitech.papilio.data.UpdateChange;
 import com.yukthitech.utils.exceptions.InvalidArgumentException;
 import com.yukthitech.utils.exceptions.InvalidStateException;
+import com.yukthitech.utils.fmarker.FreeMarkerEngine;
 
 /**
  * Db shcema versioner for mongodb.
@@ -61,6 +64,11 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 	 * The Constant HOST_PORT.
 	 */
 	private static final Pattern HOST_PORT = Pattern.compile("([\\w\\.\\-]+)\\:(\\d+)");
+	
+	/**
+	 * Used to parse query templates.
+	 */
+	private static FreeMarkerEngine freeMarkerEngine = new FreeMarkerEngine();
 	
 	/**
 	 * Mongo client connection.
@@ -426,6 +434,84 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		Document res = database.runCommand(toDoc(query));
 		logger.debug("Query resulted in doc:\n{}", res.toJson());
+	}
+	
+	@SuppressWarnings("unchecked")
+	private List<Object> executeFinder(String queryStr)
+	{
+		Map<String, Object> query = null;
+		
+		try
+		{
+			query = (Map<String, Object>) JsonUtils.parseJson(queryStr);
+		}catch(Exception ex)
+		{
+			throw new InvalidStateException("[Find-Update] An error occurred while parsing input query as json. Query: {}", query, ex);
+		}
+		
+		logger.debug("[Find-Update] Execuing finder query: {}", query);
+		
+		try
+		{
+			Document res = database.runCommand(toDoc(query));
+			return (List<Object>) PropertyUtils.getProperty(res, "cursor.firstBatch");
+		}catch(Exception ex)
+		{
+			throw new InvalidStateException("[Find-Update] An error occurred while executing finder query. Query: {}", query, ex);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void executUpdate(String updateQuery)
+	{
+		Map<String, Object> query = null;
+		
+		try
+		{
+			query = (Map<String, Object>) JsonUtils.parseJson(updateQuery);
+		}catch(Exception ex)
+		{
+			throw new InvalidStateException("[Find-Update] An error occurred while parsing update query as json. Query: {}", query, ex);
+		}
+		
+		logger.debug("[Find-Update] Execuing update query: {}", query);
+		
+		Document res = database.runCommand(toDoc(query));
+		logger.debug("[Find-Update] Query resulted in doc:\n{}", res.toJson());
+	}
+
+	@Override
+	public void findAndUpdate(FindAndUpdateChange change)
+	{
+		List<Object> finderLst = executeFinder(change.getFindQuery());
+		String updateTemplate = change.getUpdateQueryTemplate();
+		
+		logger.debug("Got {} objects by finder query", finderLst.size());
+		
+		int count = 0;
+		
+		for(Object object : finderLst)
+		{
+			//replace the _id property
+			try
+			{
+				Object id = PropertyUtils.getProperty(object, "_id");
+				
+				if(id != null)
+				{
+					PropertyUtils.setProperty(object, "_id", id.toString());
+				}
+			}catch(Exception ex)
+			{
+				throw new InvalidStateException("An error occurred while converting id value", ex);
+			}
+			
+			logger.debug("[Find-Update] Executing update-query for object [Index: {}]: {}", count, object);
+			String updateQuery = freeMarkerEngine.processTemplate("update-query-template", updateTemplate, object);
+			executUpdate(updateQuery);
+			
+			count++;
+		}
 	}
 
 	@Override

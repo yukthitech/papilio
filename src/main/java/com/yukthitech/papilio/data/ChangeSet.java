@@ -185,6 +185,16 @@ public class ChangeSet implements Validateable
 	{
 		this.addChange(change);
 	}
+	
+	/**
+	 * Adds the find and update.
+	 *
+	 * @param findAndUpdate the find and update
+	 */
+	public void addFindAndUpdate(FindAndUpdateChange findAndUpdate)
+	{
+		this.addChange(findAndUpdate);
+	}
 
 	/**
 	 * Adds the query.

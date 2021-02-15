@@ -16,6 +16,7 @@ import com.yukthitech.papilio.data.CreateIndexChange;
 import com.yukthitech.papilio.data.CreateTableChange;
 import com.yukthitech.papilio.data.DatabaseChangeLog;
 import com.yukthitech.papilio.data.DeleteChange;
+import com.yukthitech.papilio.data.FindAndUpdateChange;
 import com.yukthitech.papilio.data.IChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
@@ -65,6 +66,7 @@ public class DbChangeLogExecutor
 		addExecutor(UpdateChange.class, dbSchemaVersioner::update);
 		addExecutor(QueryChange.class, dbSchemaVersioner::executQuery);
 		addExecutor(DeleteChange.class, dbSchemaVersioner::delete);
+		addExecutor(FindAndUpdateChange.class, dbSchemaVersioner::findAndUpdate);
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -153,6 +155,8 @@ public class DbChangeLogExecutor
 	
 	private boolean executeChangeSet(ChangeSet changeSet, Map<String, String> curChangesetMap)
 	{
+		boolean updateChecksum = "true".equalsIgnoreCase(System.getProperty("papilio.updateChecksum"));
+		
 		String newChecksum = Md5Evaluator.evaluateChecksum(changeSet);
 		changeSet.setChecksum(newChecksum);
 		
@@ -166,6 +170,20 @@ public class DbChangeLogExecutor
 						+ "\n\tOld checksum: %s"
 						+ "\n\tNew Checksum: %s", changeSet.getId(), oldChecksum, newChecksum);
 				
+				if(updateChecksum)
+				{
+					logger.debug(errMssg);
+					logger.debug("Updating checksum for id: {}", changeSet.getId());
+					
+					UpdateChange updateChange = new UpdateChange();
+					updateChange.setTableName(DBLOG_COLLECTION);
+					updateChange.addCondition(new ColumnValue(FLD_CHANGE_SET_ID, changeSet.getId()));
+					updateChange.addColumnValue(new ColumnValue(FLD_CHECKSUM, changeSet.getChecksum()));
+		
+					dbSchemaVersioner.update(updateChange);
+					return true;
+				}
+
 				logger.error(errMssg);
 				changeTracker.erroredChangeset(changeSet.getId(), errMssg);
 				return false;

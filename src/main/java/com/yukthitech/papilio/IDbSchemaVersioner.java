@@ -6,6 +6,7 @@ import com.yukthitech.papilio.common.PapilioArguments;
 import com.yukthitech.papilio.data.CreateIndexChange;
 import com.yukthitech.papilio.data.CreateTableChange;
 import com.yukthitech.papilio.data.DeleteChange;
+import com.yukthitech.papilio.data.FindAndUpdateChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
 import com.yukthitech.papilio.data.UpdateChange;
@@ -73,6 +74,12 @@ public interface IDbSchemaVersioner
 	 * @param change
 	 */
 	public void executQuery(QueryChange change);
+	
+	/**
+	 * Executes find and update operation.
+	 * @param change
+	 */
+	public void findAndUpdate(FindAndUpdateChange change);
 	
 	/**
 	 * Should close all the open resources.

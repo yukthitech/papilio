@@ -284,7 +284,7 @@ public class ColumnValue implements Validateable
 		
 		try
 		{
-			this.value = FileUtils.readFileToString(fileObj, Charset.defaultCharset());
+			this.value = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
 		}catch(Exception ex)
 		{
 			throw new InvalidStateException("Failed to load text content from file: {}", file);
@@ -308,7 +308,7 @@ public class ColumnValue implements Validateable
 		
 		try
 		{
-			String fileContent = FileUtils.readFileToString(fileObj, Charset.defaultCharset());
+			String fileContent = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
 			value = JsonUtils.parseJson(fileContent);
 		}catch(Exception ex)
 		{

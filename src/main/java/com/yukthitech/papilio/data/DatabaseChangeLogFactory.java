@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.Stack;
 
+import com.yukthitech.ccg.xml.DefaultParserHandler;
 import com.yukthitech.ccg.xml.XMLBeanParser;
 import com.yukthitech.utils.exceptions.InvalidStateException;
 
@@ -71,7 +72,11 @@ public class DatabaseChangeLogFactory
 		try
 		{
 			FileInputStream fis = new FileInputStream(file);
-			XMLBeanParser.parse(fis, log);
+			
+			DefaultParserHandler defaultParserHandler = new DefaultParserHandler();
+			defaultParserHandler.setExpressionEnabled(false);
+			
+			XMLBeanParser.parse(fis, log, defaultParserHandler);
 			fis.close();
 		}catch(Exception ex)
 		{

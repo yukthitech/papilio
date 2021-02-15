@@ -2,6 +2,10 @@ package com.yukthitech.papilio.common;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.yukthitech.utils.exceptions.InvalidStateException;
 
@@ -17,6 +21,7 @@ public class Md5Evaluator
 		try
 		{
 			String json = JsonUtils.toJson(object);
+			json = replaceWhitespaces(json);
 
 			// Static getInstance method is called with hashing MD5
 			MessageDigest md = MessageDigest.getInstance("MD5");
@@ -41,5 +46,62 @@ public class Md5Evaluator
 		{
 			throw new InvalidStateException("An error occurred while evaluating MD5 checking of object: {}", object, ex);
 		}
+	}
+	
+	/**
+	 * Converts the json into object. And replaces whitespaces in object
+	 * recursively.
+	 * @param json
+	 * @return
+	 */
+	private static String replaceWhitespaces(String json)
+	{
+		Object jsonObj = JsonUtils.parseJson(json);
+		Object converted = replaceWhitespacesOfObject(jsonObj);
+		
+		return JsonUtils.toJson(converted);
+	}
+	
+	/**
+	 * Replaces whitespaces in the object recursively.
+	 * @param obj
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private static Object replaceWhitespacesOfObject(Object obj)
+	{
+		if(obj instanceof Map)
+		{
+			Map<Object, Object> newMap = new LinkedHashMap<Object, Object>();
+			Map<Object, Object> curMap = (Map<Object, Object>) obj;
+			
+			curMap.forEach((key, val) -> 
+			{
+				newMap.put(key, replaceWhitespacesOfObject(val));
+			});
+			
+			return newMap;
+		}
+		
+		if(obj instanceof List)
+		{
+			List<Object> newLst = new ArrayList<Object>();
+			List<Object> curLst = (List<Object>) obj;
+			
+			curLst.forEach(val -> 
+			{
+				newLst.add(replaceWhitespacesOfObject(val));
+			});
+			
+			return newLst;
+		}
+		
+		if(obj instanceof String)
+		{
+			String str = (String) obj;
+			return str.replaceAll("\\s+", " ");
+		}
+		
+		return obj;
 	}
 }

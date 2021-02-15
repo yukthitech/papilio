@@ -217,6 +217,135 @@ public class TMongoDb
 		
 		Assert.assertEquals(actual, CommonUtils.toSet("file1-Some content from file1", "file2-Some content from file2"));
 	}
+	
+	private String getChecksum(String id)
+	{
+		MongoCollection<Document> changeLogCol =  database.getCollection("DATABASE_CHANGE_LOG");
+		FindIterable<Document> docs = changeLogCol.find(new org.bson.Document("CHANGE_SET_ID", id));
+		return (String) docs.first().get("CHECKSUM");
+	}
+
+	/**
+	 * Ensures white-spaces is not having any affect on checksum
+	 */
+	@Test(dependsOnMethods = "testBasicWorking")
+	public void testCheksumForWhitespaces()
+	{
+		ChangeTracker tracker = Main.execute(new String[] {
+				"--host", "localhost",
+				"--port", "27017",
+				"--database", "test",
+				"--changelog", "./src/test/resources/mongo/checksum/change1/checksum.xml",
+				"--dbtype", "mongo"
+			});
+		
+		Assert.assertEquals(tracker.getExitCode(), 0);
+		Assert.assertEquals(tracker.getTotalCount(), 2);
+		Assert.assertEquals(tracker.getExecutedCount(), 2);
+		Assert.assertEquals(tracker.getSkipCount(), 0);
+		Assert.assertNull(tracker.getErroredChangesetId());
+		
+		//when content is change only in terms of whitespaces there should not be any problem
+		tracker = Main.execute(new String[] {
+				"--host", "localhost",
+				"--port", "27017",
+				"--database", "test",
+				"--changelog", "./src/test/resources/mongo/checksum/change2/checksum.xml",
+				"--dbtype", "mongo"
+			});
+		
+		Assert.assertEquals(tracker.getExitCode(), 0);
+		Assert.assertEquals(tracker.getTotalCount(), 2);
+		Assert.assertEquals(tracker.getExecutedCount(), 0);
+		Assert.assertEquals(tracker.getSkipCount(), 2);
+		Assert.assertNull(tracker.getErroredChangesetId());
+	}
+
+	/**
+	 * Ensures checksum is getting changed with content.
+	 * Along with that make sure with system-property checksum is getting updated.
+	 */
+	@Test(dependsOnMethods = "testCheksumForWhitespaces")
+	public void testCheksumChanges()
+	{
+		ChangeTracker tracker = Main.execute(new String[] {
+				"--host", "localhost",
+				"--port", "27017",
+				"--database", "test",
+				"--changelog", "./src/test/resources/mongo/checksum/change3/checksum.xml",
+				"--dbtype", "mongo"
+			});
+		
+		Assert.assertEquals(tracker.getExitCode(), -1);
+		Assert.assertEquals(tracker.getTotalCount(), 2);
+		Assert.assertEquals(tracker.getExecutedCount(), 0);
+		Assert.assertEquals(tracker.getSkipCount(), 0);
+		Assert.assertEquals(tracker.getErroredChangesetId(), "Adding record for checksum test-1");
+		
+		String prechecksum = getChecksum("Adding record for checksum test-1");
+
+		//with system property ensure there are no errors
+		System.setProperty("papilio.updateChecksum", "true");
+
+		try
+		{
+			tracker = Main.execute(new String[] {
+					"--host", "localhost",
+					"--port", "27017",
+					"--database", "test",
+					"--changelog", "./src/test/resources/mongo/checksum/change3/checksum.xml",
+					"--dbtype", "mongo"
+				});
+			
+			Assert.assertEquals(tracker.getExitCode(), 0);
+			Assert.assertEquals(tracker.getTotalCount(), 2);
+			Assert.assertEquals(tracker.getExecutedCount(), 0);
+			Assert.assertEquals(tracker.getSkipCount(), 0);
+			Assert.assertNull(tracker.getErroredChangesetId());
+	
+			String postchecksum = getChecksum("Adding record for checksum test-1");
+			Assert.assertNotNull(prechecksum);
+			Assert.assertNotNull(postchecksum);
+			Assert.assertNotEquals(prechecksum, postchecksum);
+		} finally
+		{
+			//revert the system prop for future test cases
+			System.setProperty("papilio.updateChecksum", "false");
+		}
+		
+	}
+
+	@Test(dependsOnMethods = "testBasicWorking")
+	public void testFindAndUpdate()
+	{
+		ChangeTracker tracker = Main.execute(new String[] {
+				"--host", "localhost",
+				"--port", "27017",
+				"--database", "test",
+				"--changelog", "./src/test/resources/mongo/find-n-update.xml",
+				"--dbtype", "mongo"
+			});
+		
+		Assert.assertEquals(tracker.getExitCode(), 0);
+		Assert.assertEquals(tracker.getTotalCount(), 1);
+		Assert.assertEquals(tracker.getExecutedCount(), 1);
+		Assert.assertEquals(tracker.getSkipCount(), 0);
+
+		//ensure db is updated with right records
+		MongoCollection<Document> testCol =  database.getCollection("TEST_COL");
+		
+		FindIterable<Document> docs = testCol.find();
+		int count = 0;
+		
+		for(Document doc : docs)
+		{
+			Assert.assertEquals(doc.getString("lowerName"), 
+					doc.getString("name").toLowerCase());
+			count ++;
+		}
+		
+		Assert.assertTrue(count > 0);
+	}
 
 	@AfterClass
 	public void cleanup()

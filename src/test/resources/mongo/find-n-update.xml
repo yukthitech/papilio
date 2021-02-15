@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<databaseChangeLog>
+	<changeSet author="akiran" id="Adding lower name field from name field">
+		<findAndUpdate>
+			<find-query>
+				{
+					"find": "TEST_COL"
+				}
+			</find-query>
+			
+			<update-query-template>
+				{
+					"update": "TEST_COL",
+					"updates": [
+						{
+							"q": {"name": "${name}"}, 
+							"u": {"$set": {"lowerName": "${name?lower_case}"}}
+						}
+					]
+				}
+			</update-query-template>
+		</findAndUpdate>
+	</changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<databaseChangeLog>
+	<changeSet author="akiran" id="Adding record for checksum test-1">
+		<insert tableName="TEST_COL">
+			<column-value name="name" value="Checksum1"/>
+			<column-value name="lastName" value="Checksum1"/>
+			<column-value name="desc" value="This is some desc with    whitespaces."/>
+		</insert>
+	</changeSet>
+
+	<changeSet author="akiran" id="Adding record for checksum test-2">
+		<insert tableName="TEST_COL">
+			<column-value name="name" value="Checksum2"/>
+			<column-value name="lastName" value="Checksum2"/>
+			<column-value name="desc" value="This is some desc with    whitespaces."/>
+		</insert>
+	</changeSet>
+</databaseChangeLog>
