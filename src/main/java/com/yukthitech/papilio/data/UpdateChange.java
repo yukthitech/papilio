@@ -1,12 +1,18 @@
 package com.yukthitech.papilio.data;
 
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
+import com.yukthitech.papilio.common.JsonUtils;
+import com.yukthitech.utils.exceptions.InvalidStateException;
 
 /**
  * Change to insert document.
@@ -87,6 +93,41 @@ public class UpdateChange extends AbstractOptionBasedChange implements IChange, 
 		}
 		
 		this.columnValues.add(columnValue);
+	}
+
+	
+	/**
+	 * Loads specified json file as a map and every entry as column-value
+	 * on to this change.
+	 * @param jsonFile file to load.
+	 * @return current instance
+	 */
+	@SuppressWarnings("unchecked")
+	public void addColumnValueJson(String jsonFile)
+	{
+		File fileObj = new File(jsonFile);
+		Object value = null;
+		
+		try
+		{
+			String fileContent = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
+			value = JsonUtils.parseJson(fileContent);
+		}catch(Exception ex)
+		{
+			throw new InvalidStateException("Failed to load json content from file: {}", jsonFile, ex);
+		}
+
+		if(!(value instanceof Map))
+		{
+			throw new InvalidStateException("Json file {} resulted in non-map value for column-value-json", jsonFile);
+		}
+		
+		Map<String, Object> map = (Map<String, Object>) value;
+		
+		for(Map.Entry<String, Object> mapEntry : map.entrySet())
+		{
+			addColumnValue(new ColumnValue(mapEntry.getKey(), mapEntry.getValue()));
+		}
 	}
 
 	/**

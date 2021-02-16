@@ -2,6 +2,8 @@ package com.yukthitech.papilio.data;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.jxpath.JXPathContext;
@@ -26,7 +28,6 @@ import com.yukthitech.utils.exceptions.InvalidStateException;
  */
 public class ColumnValue implements Validateable
 {
-	
 	/**
 	 * The logger.
 	 */
@@ -36,6 +37,8 @@ public class ColumnValue implements Validateable
 	 * Used to subquery json.
 	 */
 	private static ObjectMapper objectMapper = new ObjectMapper();
+	
+	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 	
 	/**
 	 * Column name.
@@ -324,6 +327,22 @@ public class ColumnValue implements Validateable
 	public void setJsonValue(String json)
 	{
 		this.value = JsonUtils.parseJson(json);
+	}
+	
+	public void setDateValue(String value) throws Exception
+	{
+		Date date = null;
+		
+		if(StringUtils.isBlank(value))
+		{
+			date = new Date();
+		}
+		else
+		{
+			date = DATE_FORMAT.parse(value);
+		}
+		
+		this.value = date;
 	}
 	
 	/**

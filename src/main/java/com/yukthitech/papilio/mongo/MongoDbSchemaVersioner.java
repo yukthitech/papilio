@@ -48,6 +48,7 @@ import com.yukthitech.papilio.data.FindAndUpdateChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
 import com.yukthitech.papilio.data.UpdateChange;
+import com.yukthitech.utils.ConvertUtils;
 import com.yukthitech.utils.exceptions.InvalidArgumentException;
 import com.yukthitech.utils.exceptions.InvalidStateException;
 import com.yukthitech.utils.fmarker.FreeMarkerEngine;
@@ -174,11 +175,13 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 			
 			try
 			{
-				method = cls.getMethod(entry.getKey(), value.getClass());
+				method = getSetter(cls, entry.getKey());
 			}catch(NoSuchMethodException ex)
 			{
 				throw new InvalidConfigurationException("In options type '{}' no option found with name '{}' of type: {}", cls.getName(), entry.getKey(), value.getClass().getName(), ex);
 			}
+			
+			value = ConvertUtils.convert(value, method.getParameterTypes()[0]);
 			
 			try
 			{
@@ -188,6 +191,26 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 				throw new InvalidStateException("An error occurred while setting option: {}", entry.getKey(), ex);
 			}
 		}
+	}
+	
+	private Method getSetter(Class<?> type, String name) throws NoSuchMethodException
+	{
+		Method methods[] = type.getMethods();
+		
+		for(Method method : methods)
+		{
+			if(method.getParameterCount() != 1)
+			{
+				continue;
+			}
+			
+			if(method.getName().equals(name))
+			{
+				return method;
+			}
+		}
+		
+		throw new NoSuchMethodException("No setter method found with name: " + name);
 	}
 	
 	@Override
