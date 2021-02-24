@@ -3,11 +3,13 @@ package com.yukthitech.papilio.data;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.jxpath.JXPathContext;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
@@ -331,16 +333,8 @@ public class ColumnValue implements Validateable
 	
 	public void setDateValue(String value) throws Exception
 	{
-		Date date = null;
-		
-		if(StringUtils.isBlank(value))
-		{
-			date = new Date();
-		}
-		else
-		{
-			date = DATE_FORMAT.parse(value);
-		}
+		Date date = DATE_FORMAT.parse(value);
+		date = DateUtils.truncate(date, Calendar.DATE);
 		
 		this.value = date;
 	}

@@ -2,6 +2,7 @@ package com.yukthitech.papilio.data;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
 
@@ -15,6 +16,12 @@ public class CreateTableChange extends AbstractOptionBasedChange implements ICha
 	 * Table or collection name.
 	 */
 	private String tableName;
+	
+	/**
+	 * If set to true, and if an error occurs indicating collection already exist, it will be ignored.
+	 */
+	@JsonInclude(value = JsonInclude.Include.NON_NULL)
+	private Boolean ignoreIfExists;
 	
 	/**
 	 * Instantiates a new creates the table change.
@@ -51,7 +58,32 @@ public class CreateTableChange extends AbstractOptionBasedChange implements ICha
 	{
 		return tableName;
 	}
+	
+	/**
+	 * Checks if is if set to true, and if an error occurs indicating collection already exist, it will be ignored.
+	 *
+	 * @return the if set to true, and if an error occurs indicating collection already exist, it will be ignored
+	 */
+	public Boolean getIgnoreIfExists()
+	{
+		return ignoreIfExists;
+	}
 
+	/**
+	 * Sets the if set to true, and if an error occurs indicating collection already exist, it will be ignored.
+	 *
+	 * @param ignoreIfExists the new if set to true, and if an error occurs indicating collection already exist, it will be ignored
+	 */
+	public void setIgnoreIfExists(Boolean ignoreIfExists)
+	{
+		this.ignoreIfExists = ignoreIfExists;
+	}
+
+	/**
+	 * Validate.
+	 *
+	 * @throws ValidateException the validate exception
+	 */
 	/* (non-Javadoc)
 	 * @see com.yukthitech.ccg.xml.util.Validateable#validate()
 	 */

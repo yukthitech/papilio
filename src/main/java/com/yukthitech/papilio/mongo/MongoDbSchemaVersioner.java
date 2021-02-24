@@ -22,6 +22,7 @@ import org.bson.conversions.Bson;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoCommandException;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
@@ -264,14 +265,26 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 			
 			setOptions(createCollectionOptions, options);
 		}
-				
-		if(createCollectionOptions != null)
+
+		try
 		{
-			database.createCollection(tableChange.getTableName(), createCollectionOptions);
-		}
-		else
+			if(createCollectionOptions != null)
+			{
+				database.createCollection(tableChange.getTableName(), createCollectionOptions);
+			}
+			else
+			{
+				database.createCollection(tableChange.getTableName());
+			}
+		}catch(MongoCommandException ex)
 		{
-			database.createCollection(tableChange.getTableName());
+			if(Boolean.TRUE.equals(tableChange.getIgnoreIfExists()) && "NamespaceExists".equals(ex.getErrorCodeName()))
+			{
+				logger.warn("Ignoring error indicating collection already exist. Error: " + ex);
+				return;
+			}
+			
+			throw ex;
 		}
 	}
 
