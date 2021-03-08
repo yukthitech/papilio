@@ -49,6 +49,7 @@ import com.yukthitech.papilio.data.FindAndUpdateChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
 import com.yukthitech.papilio.data.UpdateChange;
+import com.yukthitech.utils.CommonUtils;
 import com.yukthitech.utils.ConvertUtils;
 import com.yukthitech.utils.exceptions.InvalidArgumentException;
 import com.yukthitech.utils.exceptions.InvalidStateException;
@@ -81,6 +82,11 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 	 * Database on which operations needs to be performed.
 	 */
 	private MongoDatabase database;
+	
+	static
+	{
+		freeMarkerEngine.loadClass(MongoDbMethods.class);
+	}
 	
 	@Override
 	public void init(PapilioArguments args)
@@ -124,6 +130,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		}
 		
 		this.database = mongoClient.getDatabase(database);
+		MongoDbMethods.setDatabase(this.database);
 		
 		logger.debug("Connected to mongocluster {} successfully", replicas);
 	}
@@ -456,19 +463,27 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 	@Override
 	public void executQuery(QueryChange change)
 	{
-		Map<String, Object> query = null;
+		String query = change.getQuery();
+		
+		if(Boolean.TRUE.equals(change.getTemplate()))
+		{
+			Object context = CommonUtils.toMap("change", change);
+			query = freeMarkerEngine.processTemplate("query-template", change.getQuery(), context);
+		}
+		
+		Map<String, Object> queryMap = null;
 		
 		try
 		{
-			query = (Map) JsonUtils.parseJson(change.getQuery());
+			queryMap = (Map) JsonUtils.parseJson(query);
 		}catch(Exception ex)
 		{
-			throw new InvalidStateException("An error occurred while parsing input query as json. Query: {}", query, ex);
+			throw new InvalidStateException("An error occurred while parsing input query as json. Query: {}", queryMap, ex);
 		}
 		
-		logger.debug("Execuing query: {}", query);
+		logger.debug("Execuing query: {}", queryMap);
 		
-		Document res = database.runCommand(toDoc(query));
+		Document res = database.runCommand(toDoc(queryMap));
 		logger.debug("Query resulted in doc:\n{}", res.toJson());
 	}
 	

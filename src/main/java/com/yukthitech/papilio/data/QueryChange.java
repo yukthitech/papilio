@@ -1,5 +1,7 @@
 package com.yukthitech.papilio.data;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Change which would execute specified query directly.
  * @author akiran
@@ -10,6 +12,12 @@ public class QueryChange implements IChange
 	 * Query to execute.
 	 */
 	private String query;
+	
+	/**
+	 * Flag indicating if the query should be processed as template or not.
+	 */
+	@JsonInclude(value = JsonInclude.Include.NON_NULL)
+	private Boolean template;
 
 	/**
 	 * Instantiates a new query change.
@@ -39,5 +47,15 @@ public class QueryChange implements IChange
 	public String getQuery()
 	{
 		return query;
+	}
+
+	public Boolean getTemplate()
+	{
+		return template;
+	}
+
+	public void setTemplate(Boolean template)
+	{
+		this.template = template;
 	}
 }
