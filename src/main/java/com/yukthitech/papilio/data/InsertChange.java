@@ -13,7 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.mongodb.client.MongoDatabase;
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
-import com.yukthitech.papilio.common.JsonUtils;
+import com.yukthitech.papilio.common.PapilioUtils;
 import com.yukthitech.utils.exceptions.InvalidStateException;
 
 /**
@@ -114,7 +114,7 @@ public class InsertChange implements IChange, Validateable
 		try
 		{
 			String fileContent = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
-			value = JsonUtils.parseJson(fileContent);
+			value = PapilioUtils.parseJson(fileContent);
 		}catch(Exception ex)
 		{
 			throw new InvalidStateException("Failed to load json content from file: {}", jsonFile, ex);

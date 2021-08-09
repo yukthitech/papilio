@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoDatabase;
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
-import com.yukthitech.papilio.common.JsonUtils;
+import com.yukthitech.papilio.common.PapilioUtils;
 import com.yukthitech.utils.exceptions.InvalidArgumentException;
 import com.yukthitech.utils.exceptions.InvalidStateException;
 
@@ -297,7 +297,7 @@ public class ColumnValue implements Validateable
 	}
 	
 	/**
-	 * Sets the json from file.
+	 * Loads the object from json file.
 	 *
 	 * @param file the new json from file
 	 */
@@ -314,11 +314,24 @@ public class ColumnValue implements Validateable
 		try
 		{
 			String fileContent = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
-			value = JsonUtils.parseJson(fileContent);
+			value = PapilioUtils.parseJson(fileContent);
 		}catch(Exception ex)
 		{
 			throw new InvalidStateException("Failed to load json content from file: {}", file);
 		}
+	}
+
+	/**
+	 * Loads the object from xml file.
+	 *
+	 * @param file the new xml from file
+	 */
+	public void setXmlFromFile(String file)
+	{
+		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
+		File fileObj = new File(parentFile, file);
+		
+		value = PapilioUtils.loadXml(fileObj);
 	}
 
 	/**
@@ -328,7 +341,7 @@ public class ColumnValue implements Validateable
 	 */
 	public void setJsonValue(String json)
 	{
-		this.value = JsonUtils.parseJson(json);
+		this.value = PapilioUtils.parseJson(json);
 	}
 	
 	public void setDateValue(String value) throws Exception

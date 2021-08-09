@@ -20,7 +20,7 @@ public class Md5Evaluator
 	{
 		try
 		{
-			String json = JsonUtils.toJson(object);
+			String json = PapilioUtils.toJson(object);
 			json = replaceWhitespaces(json);
 
 			// Static getInstance method is called with hashing MD5
@@ -56,10 +56,10 @@ public class Md5Evaluator
 	 */
 	private static String replaceWhitespaces(String json)
 	{
-		Object jsonObj = JsonUtils.parseJson(json);
+		Object jsonObj = PapilioUtils.parseJson(json);
 		Object converted = replaceWhitespacesOfObject(jsonObj);
 		
-		return JsonUtils.toJson(converted);
+		return PapilioUtils.toJson(converted);
 	}
 	
 	/**

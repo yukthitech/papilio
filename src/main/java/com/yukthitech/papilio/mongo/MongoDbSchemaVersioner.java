@@ -39,7 +39,7 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.yukthitech.papilio.IDbSchemaVersioner;
 import com.yukthitech.papilio.InvalidConfigurationException;
-import com.yukthitech.papilio.common.JsonUtils;
+import com.yukthitech.papilio.common.PapilioUtils;
 import com.yukthitech.papilio.common.PapilioArguments;
 import com.yukthitech.papilio.data.ColumnValue;
 import com.yukthitech.papilio.data.CreateIndexChange;
@@ -475,7 +475,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		try
 		{
-			queryMap = (Map) JsonUtils.parseJson(query);
+			queryMap = (Map) PapilioUtils.parseJson(query);
 		}catch(Exception ex)
 		{
 			throw new InvalidStateException("An error occurred while parsing input query as json. Query: {}", queryMap, ex);
@@ -494,7 +494,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		try
 		{
-			query = (Map<String, Object>) JsonUtils.parseJson(queryStr);
+			query = (Map<String, Object>) PapilioUtils.parseJson(queryStr);
 		}catch(Exception ex)
 		{
 			throw new InvalidStateException("[Find-Update] An error occurred while parsing input query as json. Query: {}", query, ex);
@@ -519,7 +519,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		try
 		{
-			query = (Map<String, Object>) JsonUtils.parseJson(updateQuery);
+			query = (Map<String, Object>) PapilioUtils.parseJson(updateQuery);
 		}catch(Exception ex)
 		{
 			throw new InvalidStateException("[Find-Update] An error occurred while parsing update query as json. Query: {}", query, ex);

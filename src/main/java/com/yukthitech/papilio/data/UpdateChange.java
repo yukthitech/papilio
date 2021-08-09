@@ -11,7 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
-import com.yukthitech.papilio.common.JsonUtils;
+import com.yukthitech.papilio.common.PapilioUtils;
 import com.yukthitech.utils.exceptions.InvalidStateException;
 
 /**
@@ -111,7 +111,7 @@ public class UpdateChange extends AbstractOptionBasedChange implements IChange, 
 		try
 		{
 			String fileContent = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
-			value = JsonUtils.parseJson(fileContent);
+			value = PapilioUtils.parseJson(fileContent);
 		}catch(Exception ex)
 		{
 			throw new InvalidStateException("Failed to load json content from file: {}", jsonFile, ex);
@@ -123,6 +123,23 @@ public class UpdateChange extends AbstractOptionBasedChange implements IChange, 
 		}
 		
 		Map<String, Object> map = (Map<String, Object>) value;
+		
+		for(Map.Entry<String, Object> mapEntry : map.entrySet())
+		{
+			addColumnValue(new ColumnValue(mapEntry.getKey(), mapEntry.getValue()));
+		}
+	}
+
+	/**
+	 * Loads specified xml file as a map and every entry as column-value
+	 * on to this change.
+	 * @param jsonFile file to load.
+	 * @return current instance
+	 */
+	public void addColumnValueXml(String xmlFile)
+	{
+		File fileObj = new File(xmlFile);
+		Map<String, Object> map = PapilioUtils.loadXml(fileObj);
 		
 		for(Map.Entry<String, Object> mapEntry : map.entrySet())
 		{
