@@ -115,7 +115,7 @@ public class TMongoDb
 			"--port", "27017",
 			"--database", "test",
 			"--changelog", "./src/test/resources/mongo/basic-working.xml",
-			"--dbtype", "mongo"
+			"--dbtype", "mongo",
 		});
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);

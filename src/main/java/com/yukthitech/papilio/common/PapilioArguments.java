@@ -52,6 +52,13 @@ public class PapilioArguments
 	private String password;
 
 	/**
+	 * If true, then it will indicate the db connectivity should happen via SSL. Default: false.
+	 */
+	@CliArgument(name = "ssl", longName = "enable-ssl", 
+			description = "If true, then it will indicate the db connectivity should happen via SSL. Default: false", required = false)
+	private boolean enableSsl = false;
+
+	/**
 	 * Change log file to be processed.
 	 */
 	@CliArgument(name = "cl", longName = "changelog", description = "Change log file to be processed.", required = true)
@@ -224,4 +231,28 @@ public class PapilioArguments
 		this.replicas = replicas;
 	}
 
+	/**
+	 * Checks if is if true, then it will indicate the db connectivity should
+	 * happen via SSL. Default: false.
+	 *
+	 * @return the if true, then it will indicate the db connectivity should
+	 *         happen via SSL
+	 */
+	public boolean isEnableSsl()
+	{
+		return enableSsl;
+	}
+
+	/**
+	 * Sets the if true, then it will indicate the db connectivity should happen
+	 * via SSL. Default: false.
+	 *
+	 * @param enableSsl
+	 *            the new if true, then it will indicate the db connectivity
+	 *            should happen via SSL
+	 */
+	public void setEnableSsl(boolean enableSsl)
+	{
+		this.enableSsl = enableSsl;
+	}
 }

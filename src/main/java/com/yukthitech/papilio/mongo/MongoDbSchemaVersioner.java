@@ -118,6 +118,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		MongoClientOptions clientOptions = MongoClientOptions.builder()
 				.writeConcern(WriteConcern.ACKNOWLEDGED)
+				.sslEnabled(args.isEnableSsl())
 				.build();
 				
 		if(credential != null)
