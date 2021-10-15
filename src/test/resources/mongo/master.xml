@@ -2,4 +2,5 @@
 <databaseChangeLog>
 	<include path="basic-working.xml"/>
 	<include path="ext-files/ext-file-working.xml"/>	
+	<include path="script-exec.xml"/>
 </databaseChangeLog>

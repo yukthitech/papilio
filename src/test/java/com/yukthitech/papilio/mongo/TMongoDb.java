@@ -198,8 +198,8 @@ public class TMongoDb
 			});
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);
-		Assert.assertEquals(tracker.getTotalCount(), 6);
-		Assert.assertEquals(tracker.getExecutedCount(), 2);
+		Assert.assertEquals(tracker.getTotalCount(), 8);
+		Assert.assertEquals(tracker.getExecutedCount(), 4);
 		Assert.assertEquals(tracker.getSkipCount(), 4);
 		Assert.assertNull(tracker.getErroredChangesetId());
 

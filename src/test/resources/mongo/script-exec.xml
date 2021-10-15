@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<databaseChangeLog>
+	<changeSet author="akiran" id="Adding intVal field">
+		<script>
+			db.TEST_COL.update(
+				{},
+				{"$set": {"intVal": 10}},
+				{"multi": true}
+			)
+		</script>
+	</changeSet>
+
+	<changeSet author="akiran" id="Adding newIntVal field">
+		<exec-script-file>script-ext.js</exec-script-file>
+	</changeSet>
+</databaseChangeLog>

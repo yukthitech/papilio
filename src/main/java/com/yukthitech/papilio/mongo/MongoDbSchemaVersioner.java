@@ -37,10 +37,11 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import com.yukthitech.mongojs.MongoJsEngine;
 import com.yukthitech.papilio.IDbSchemaVersioner;
 import com.yukthitech.papilio.InvalidConfigurationException;
-import com.yukthitech.papilio.common.PapilioUtils;
 import com.yukthitech.papilio.common.PapilioArguments;
+import com.yukthitech.papilio.common.PapilioUtils;
 import com.yukthitech.papilio.data.ColumnValue;
 import com.yukthitech.papilio.data.CreateIndexChange;
 import com.yukthitech.papilio.data.CreateTableChange;
@@ -48,6 +49,7 @@ import com.yukthitech.papilio.data.DeleteChange;
 import com.yukthitech.papilio.data.FindAndUpdateChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
+import com.yukthitech.papilio.data.ScriptChange;
 import com.yukthitech.papilio.data.UpdateChange;
 import com.yukthitech.utils.CommonUtils;
 import com.yukthitech.utils.ConvertUtils;
@@ -82,6 +84,11 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 	 * Database on which operations needs to be performed.
 	 */
 	private MongoDatabase database;
+	
+	/**
+	 * Engined for mongo js executions.
+	 */
+	private MongoJsEngine mongoJsEngine;
 	
 	static
 	{
@@ -132,6 +139,8 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		this.database = mongoClient.getDatabase(database);
 		MongoDbMethods.setDatabase(this.database);
+		
+		this.mongoJsEngine = new MongoJsEngine(this.database);
 		
 		logger.debug("Connected to mongocluster {} successfully", replicas);
 	}
@@ -486,6 +495,13 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		
 		Document res = database.runCommand(toDoc(queryMap));
 		logger.debug("Query resulted in doc:\n{}", res.toJson());
+	}
+	
+	@Override
+	public void executScript(ScriptChange change)
+	{
+		String script = change.getScript();
+		mongoJsEngine.executeScript(script);
 	}
 	
 	@SuppressWarnings("unchecked")

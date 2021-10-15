@@ -1,8 +1,11 @@
 package com.yukthitech.papilio.data;
 
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.yukthitech.ccg.xml.util.ValidateException;
@@ -209,6 +212,36 @@ public class ChangeSet implements Validateable
 		}
 		
 		this.addChange(new QueryChange(query));
+	}
+	
+	public void addScript(String script)
+	{
+		if(StringUtils.isBlank(script))
+		{
+			throw new InvalidArgumentException("Script can not be empty");
+		}
+		
+		this.addChange(new ScriptChange(script));
+	}
+	
+	public void addExecScriptFile(String file)
+	{
+		if(StringUtils.isBlank(file))
+		{
+			throw new InvalidArgumentException("Script-file can not be empty");
+		}
+
+		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
+		File fileObj = new File(parentFile, file);
+
+		try
+		{
+			String script = FileUtils.readFileToString(fileObj, Charset.defaultCharset());
+			this.addChange(new ScriptChange(script));			
+		}catch(Exception ex)
+		{
+			throw new InvalidArgumentException("Failed to read input file: {}", fileObj.getAbsolutePath());
+		}
 	}
 	
 	public void addQueryTemplate(String query)

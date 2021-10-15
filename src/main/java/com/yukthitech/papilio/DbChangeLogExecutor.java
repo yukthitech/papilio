@@ -20,6 +20,7 @@ import com.yukthitech.papilio.data.FindAndUpdateChange;
 import com.yukthitech.papilio.data.IChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
+import com.yukthitech.papilio.data.ScriptChange;
 import com.yukthitech.papilio.data.UpdateChange;
 
 public class DbChangeLogExecutor
@@ -65,6 +66,7 @@ public class DbChangeLogExecutor
 		addExecutor(InsertChange.class, dbSchemaVersioner::insert);
 		addExecutor(UpdateChange.class, dbSchemaVersioner::update);
 		addExecutor(QueryChange.class, dbSchemaVersioner::executQuery);
+		addExecutor(ScriptChange.class, dbSchemaVersioner::executScript);
 		addExecutor(DeleteChange.class, dbSchemaVersioner::delete);
 		addExecutor(FindAndUpdateChange.class, dbSchemaVersioner::findAndUpdate);
 	}

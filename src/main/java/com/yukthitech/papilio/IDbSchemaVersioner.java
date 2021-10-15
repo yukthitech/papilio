@@ -9,6 +9,7 @@ import com.yukthitech.papilio.data.DeleteChange;
 import com.yukthitech.papilio.data.FindAndUpdateChange;
 import com.yukthitech.papilio.data.InsertChange;
 import com.yukthitech.papilio.data.QueryChange;
+import com.yukthitech.papilio.data.ScriptChange;
 import com.yukthitech.papilio.data.UpdateChange;
 
 /**
@@ -74,6 +75,12 @@ public interface IDbSchemaVersioner
 	 * @param change
 	 */
 	public void executQuery(QueryChange change);
+	
+	/**
+	 * Executes the specified script.
+	 * @param change
+	 */
+	public void executScript(ScriptChange change);
 	
 	/**
 	 * Executes find and update operation.
