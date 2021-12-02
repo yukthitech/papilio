@@ -257,6 +257,19 @@ public class ChangeSet implements Validateable
 		this.addChange(change);
 	}
 
+	public void addQueryJelTemplate(String query)
+	{
+		if(StringUtils.isBlank(query))
+		{
+			throw new InvalidArgumentException("Query can not be empty");
+		}
+		
+		QueryChange change = new QueryChange(query);
+		change.setJelTemplate(true);
+		
+		this.addChange(change);
+	}
+
 	/**
 	 * Gets the calculate checksum of the changeset.
 	 *

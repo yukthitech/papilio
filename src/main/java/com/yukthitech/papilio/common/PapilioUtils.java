@@ -8,8 +8,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yukthitech.ccg.xml.DynamicBean;
 import com.yukthitech.ccg.xml.DynamicBeanParserHandler;
 import com.yukthitech.ccg.xml.XMLBeanParser;
+import com.yukthitech.jexpr.JsonExprEngine;
+import com.yukthitech.papilio.mongo.MongoDbMethods;
 import com.yukthitech.utils.exceptions.InvalidArgumentException;
 import com.yukthitech.utils.exceptions.InvalidStateException;
+import com.yukthitech.utils.fmarker.FreeMarkerEngine;
 
 /**
  * Json related utils.
@@ -22,6 +25,22 @@ public class PapilioUtils
 	 * Object mapper.
 	 */
 	private static ObjectMapper objectMapper = new ObjectMapper();
+
+	/**
+	 * Used to parse query templates.
+	 */
+	private static FreeMarkerEngine freeMarkerEngine = new FreeMarkerEngine();
+	
+	/**
+	 * For jel template processing.
+	 */
+	private static JsonExprEngine jsonExprEngine = new JsonExprEngine();
+
+	static
+	{
+		freeMarkerEngine.loadClass(MongoDbMethods.class);
+		jsonExprEngine.setFreeMarkerEngine(freeMarkerEngine);
+	}
 
 	public static Object parseJson(String json)
 	{
@@ -70,5 +89,15 @@ public class PapilioUtils
 		{
 			throw new InvalidStateException("Failed to load xml content from file: {}", fileObj.getPath(), ex);
 		}
+	}
+	
+	public static String processTemplate(String name, String template, Object context)
+	{
+		return freeMarkerEngine.processTemplate(template, template, context);
+	}
+	
+	public static String processJelTemplate(String jsonTemplate, Map<String, Object> context)
+	{
+		return jsonExprEngine.processJson(jsonTemplate, context);
 	}
 }

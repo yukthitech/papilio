@@ -1,12 +1,11 @@
 package com.yukthitech.papilio.data;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.jxpath.JXPathContext;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -21,7 +20,7 @@ import com.mongodb.client.MongoDatabase;
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
 import com.yukthitech.papilio.common.PapilioUtils;
-import com.yukthitech.utils.exceptions.InvalidArgumentException;
+import com.yukthitech.papilio.mongo.MongoDbMethods;
 import com.yukthitech.utils.exceptions.InvalidStateException;
 
 /**
@@ -279,21 +278,7 @@ public class ColumnValue implements Validateable
 	 */
 	public void setValueFromFile(String file)
 	{
-		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
-		File fileObj = new File(parentFile, file);
-		
-		if(!fileObj.exists())
-		{
-			throw new InvalidArgumentException("Invalid/non-existing file specified: {}", file);
-		}
-		
-		try
-		{
-			this.value = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
-		}catch(Exception ex)
-		{
-			throw new InvalidStateException("Failed to load text content from file: {}", file);
-		}
+		this.value = MongoDbMethods.loadTextFile(file);
 	}
 	
 	/**
@@ -303,22 +288,7 @@ public class ColumnValue implements Validateable
 	 */
 	public void setJsonFromFile(String file)
 	{
-		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
-		File fileObj = new File(parentFile, file);
-		
-		if(!fileObj.exists())
-		{
-			throw new InvalidArgumentException("Invalid/non-existing file specified: {}", file);
-		}
-		
-		try
-		{
-			String fileContent = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
-			value = PapilioUtils.parseJson(fileContent);
-		}catch(Exception ex)
-		{
-			throw new InvalidStateException("Failed to load json content from file: {}", file);
-		}
+		this.value = MongoDbMethods.loadJsonFile(file);
 	}
 
 	/**
@@ -342,6 +312,16 @@ public class ColumnValue implements Validateable
 	public void setJsonValue(String json)
 	{
 		this.value = PapilioUtils.parseJson(json);
+	}
+	
+	/**
+	 * Sets the value parsed from specified jel-template json. 
+	 * @param jelTemplate JEL json template
+	 */
+	public void setJelValue(String jelTemplate)
+	{
+		String finalJson = PapilioUtils.processJelTemplate(jelTemplate, new HashMap<String, Object>());
+		this.value = PapilioUtils.parseJson(finalJson);
 	}
 	
 	public void setDateValue(String value) throws Exception

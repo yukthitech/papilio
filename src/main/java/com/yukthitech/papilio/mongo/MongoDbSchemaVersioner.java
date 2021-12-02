@@ -55,7 +55,6 @@ import com.yukthitech.utils.CommonUtils;
 import com.yukthitech.utils.ConvertUtils;
 import com.yukthitech.utils.exceptions.InvalidArgumentException;
 import com.yukthitech.utils.exceptions.InvalidStateException;
-import com.yukthitech.utils.fmarker.FreeMarkerEngine;
 
 /**
  * Db shcema versioner for mongodb.
@@ -71,11 +70,6 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 	private static final Pattern HOST_PORT = Pattern.compile("([\\w\\.\\-]+)\\:(\\d+)");
 	
 	/**
-	 * Used to parse query templates.
-	 */
-	private static FreeMarkerEngine freeMarkerEngine = new FreeMarkerEngine();
-	
-	/**
 	 * Mongo client connection.
 	 */
 	private MongoClient mongoClient;
@@ -89,11 +83,6 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 	 * Engined for mongo js executions.
 	 */
 	private MongoJsEngine mongoJsEngine;
-	
-	static
-	{
-		freeMarkerEngine.loadClass(MongoDbMethods.class);
-	}
 	
 	@Override
 	public void init(PapilioArguments args)
@@ -478,9 +467,14 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		if(Boolean.TRUE.equals(change.getTemplate()))
 		{
 			Object context = CommonUtils.toMap("change", change);
-			query = freeMarkerEngine.processTemplate("query-template", change.getQuery(), context);
+			query = PapilioUtils.processTemplate("query-template", change.getQuery(), context);
 		}
-		
+		else if(Boolean.TRUE.equals(change.getJelTemplate()))
+		{
+			Map<String, Object> context = CommonUtils.toMap("change", change);
+			query = PapilioUtils.processJelTemplate(change.getQuery(), context);
+		}
+
 		Map<String, Object> queryMap = null;
 		
 		try
@@ -575,7 +569,7 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 			}
 			
 			logger.debug("[Find-Update] Executing update-query for object [Index: {}]: {}", count, object);
-			String updateQuery = freeMarkerEngine.processTemplate("update-query-template", updateTemplate, object);
+			String updateQuery = PapilioUtils.processTemplate("update-query-template", updateTemplate, object);
 			executUpdate(updateQuery);
 			
 			count++;

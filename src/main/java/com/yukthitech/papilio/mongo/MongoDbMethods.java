@@ -1,7 +1,10 @@
 package com.yukthitech.papilio.mongo;
 
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
@@ -9,7 +12,11 @@ import org.bson.types.ObjectId;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoDatabase;
+import com.yukthitech.papilio.common.PapilioUtils;
+import com.yukthitech.papilio.data.DatabaseChangeLogFactory;
 import com.yukthitech.utils.CommonUtils;
+import com.yukthitech.utils.exceptions.InvalidArgumentException;
+import com.yukthitech.utils.exceptions.InvalidStateException;
 import com.yukthitech.utils.fmarker.annotaion.FreeMarkerMethod;
 
 /**
@@ -57,5 +64,60 @@ public class MongoDbMethods
 		ObjectId id = (ObjectId) doc.get("_id");
 		logger.debug("Got the id as: {}", id);
 		return id.toString();
+	}
+	
+	/**
+	 * Load string content from file.
+	 *
+	 * @param file
+	 *            the file
+	 * @return string from file
+	 */
+	@FreeMarkerMethod
+	public static String loadTextFile(String file)
+	{
+		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
+		File fileObj = new File(parentFile, file);
+		
+		if(!fileObj.exists())
+		{
+			throw new InvalidArgumentException("Invalid/non-existing file specified: {}", file);
+		}
+		
+		try
+		{
+			return FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
+		}catch(Exception ex)
+		{
+			throw new InvalidStateException("Failed to load text content from file: {}", file);
+		}
+	}
+	
+	/**
+	 * Loads the objects from specified json file.
+	 *
+	 * @param file
+	 *            the file
+	 * @return the object
+	 */
+	@FreeMarkerMethod
+	public static Object loadJsonFile(String file)
+	{
+		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
+		File fileObj = new File(parentFile, file);
+		
+		if(!fileObj.exists())
+		{
+			throw new InvalidArgumentException("Invalid/non-existing file specified: {}", file);
+		}
+		
+		try
+		{
+			String fileContent = FileUtils.readFileToString(fileObj, Charset.forName("utf8"));
+			return PapilioUtils.parseJson(fileContent);
+		}catch(Exception ex)
+		{
+			throw new InvalidStateException("Failed to load json content from file: {}", file);
+		}
 	}
 }
