@@ -153,7 +153,9 @@ public class UpdateChange extends AbstractOptionBasedChange implements IChange, 
 	 */
 	public void addColumnValueXml(String xmlFile)
 	{
-		File fileObj = new File(xmlFile);
+		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
+		File fileObj = new File(parentFile, xmlFile);
+
 		Map<String, Object> map = PapilioUtils.loadXml(fileObj);
 		
 		for(Map.Entry<String, Object> mapEntry : map.entrySet())

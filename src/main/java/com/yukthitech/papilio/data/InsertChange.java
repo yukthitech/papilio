@@ -123,7 +123,9 @@ public class InsertChange implements IChange, Validateable
 	@SuppressWarnings("unchecked")
 	public InsertChange addColumnValueJson(String jsonFile)
 	{
-		File fileObj = new File(jsonFile);
+		File parentFile = DatabaseChangeLogFactory.getCurrentFile().getParentFile();
+		File fileObj = new File(parentFile, jsonFile);
+
 		Object value = null;
 		
 		try
@@ -132,12 +134,12 @@ public class InsertChange implements IChange, Validateable
 			value = PapilioUtils.parseJson(fileContent);
 		}catch(Exception ex)
 		{
-			throw new InvalidStateException("Failed to load json content from file: {}", jsonFile, ex);
+			throw new InvalidStateException("Failed to load json content from file: {}", fileObj.getPath(), ex);
 		}
 
 		if(!(value instanceof Map))
 		{
-			throw new InvalidStateException("Json file {} resulted in non-map value for column-value-json", jsonFile);
+			throw new InvalidStateException("Json file {} resulted in non-map value for column-value-json", fileObj.getPath());
 		}
 		
 		Map<String, Object> map = (Map<String, Object>) value;
