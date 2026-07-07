@@ -18,8 +18,11 @@ package com.yukthitech.papilio.data;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.commons.jxpath.JXPathContext;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +34,7 @@ import org.bson.types.ObjectId;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import com.mongodb.client.MongoDatabase;
 import com.yukthitech.ccg.xml.util.ValidateException;
 import com.yukthitech.ccg.xml.util.Validateable;
@@ -77,6 +81,12 @@ public class ColumnValue implements Validateable
 	 */
 	@JsonInclude(value = JsonInclude.Include.NON_NULL)
 	private String valueQueryPath;
+	
+	/**
+	 * JSONPath to be used to fetch the final value from the result of value query.
+	 */
+	@JsonInclude(value = JsonInclude.Include.NON_NULL)
+	private String valueQueryJpath;
 	
 	/**
 	 * Flag indicating if value-query-path infers multiple values or single value.
@@ -155,20 +165,50 @@ public class ColumnValue implements Validateable
 				{
 					result = JXPathContext.newContext(result).getValue(valueQueryPath);
 				}
+			}
+			else if(valueQueryJpath != null)
+			{
+				JsonPath jsonPath = JsonPath.compile(valueQueryJpath);
+				result = jsonPath.read(result);
 				
-				if(result instanceof ObjectId)
+				if(!Boolean.TRUE.equals(multiValued) && result instanceof Collection)
 				{
-					result = ((ObjectId) result).toString();
+					Iterator<?> it = ((Collection<?>) result).iterator();
+					result = it.hasNext() ? it.next() : null;
 				}
 			}
+			
+			result = normalizeQueryResult(result);
 			
 			return result;
 			
 		}catch(Exception ex)
 		{
-			throw new InvalidStateException("An error occurred while processing value-query for column '{}'. Value-query-path: {}, Query:\n{}", 
-					name, valueQueryPath, valueQuery, ex);
+			String pathInfo = valueQueryPath != null ? valueQueryPath : valueQueryJpath;
+			throw new InvalidStateException("An error occurred while processing value-query for column '{}'. Path: {}, Query:\n{}", 
+					name, pathInfo, valueQuery, ex);
 		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private Object normalizeQueryResult(Object result)
+	{
+		if(result instanceof ObjectId)
+		{
+			return ((ObjectId) result).toString();
+		}
+		
+		if(result instanceof Map)
+		{
+			Map<String, Object> map = (Map<String, Object>) result;
+			
+			if(map.size() == 1 && map.containsKey("$oid"))
+			{
+				return map.get("$oid").toString();
+			}
+		}
+		
+		return result;
 	}
 	
 	/**
@@ -267,6 +307,26 @@ public class ColumnValue implements Validateable
 	}
 
 	/**
+	 * Sets the JSONPath to be used to fetch the final value from the result of value query.
+	 *
+	 * @param valueQueryJpath the JSONPath expression
+	 */
+	public void setValueQueryJpath(String valueQueryJpath)
+	{
+		this.valueQueryJpath = valueQueryJpath;
+	}
+	
+	/**
+	 * Gets the JSONPath to be used to fetch the final value from the result of value query.
+	 *
+	 * @return the JSONPath expression
+	 */
+	public String getValueQueryJpath()
+	{
+		return valueQueryJpath;
+	}
+
+	/**
 	 * Sets the flag indicating if value-query-path infers multiple values or single value.
 	 *
 	 * @param multiValued the new flag indicating if value-query-path infers multiple values or single value
@@ -361,6 +421,11 @@ public class ColumnValue implements Validateable
 		if(StringUtils.isBlank(name))
 		{
 			throw new ValidateException("Column name can not be empty");
+		}
+		
+		if(StringUtils.isNotBlank(valueQueryPath) && StringUtils.isNotBlank(valueQueryJpath))
+		{
+			throw new ValidateException("Only one of valueQueryPath and valueQueryJpath can be specified");
 		}
 	}
 }

@@ -347,6 +347,33 @@ public class TMongoDb
 		Assert.assertTrue(count > 0);
 	}
 
+	@Test(dependsOnMethods = "testBasicWorking")
+	public void testJsonPathSubquery()
+	{
+		ChangeTracker tracker = Main.execute(new String[] {
+				"--host", "localhost",
+				"--port", "27017",
+				"--database", "test",
+				"--changelog", "./src/test/resources/mongo/jsonpath-subquery.xml",
+				"--dbtype", "mongo"
+			});
+		
+		Assert.assertEquals(tracker.getExitCode(), 0);
+		Assert.assertEquals(tracker.getTotalCount(), 1);
+		Assert.assertEquals(tracker.getExecutedCount(), 1);
+		Assert.assertEquals(tracker.getSkipCount(), 0);
+
+		MongoCollection<Document> testCol = database.getCollection("TEST_COL");
+		Document kranthiDoc = testCol.find(new org.bson.Document("name", "Kranthi")).first();
+		Assert.assertNotNull(kranthiDoc);
+		String expectedId = kranthiDoc.getObjectId("_id").toString();
+
+		MongoCollection<Document> testCol2 = database.getCollection("TEST_COL2");
+		Document jsonPathDoc = testCol2.find(new org.bson.Document("name", "KranthiJsonPath")).first();
+		Assert.assertNotNull(jsonPathDoc);
+		Assert.assertEquals(jsonPathDoc.getString("testColId"), expectedId);
+	}
+
 	@AfterClass
 	public void cleanup()
 	{
