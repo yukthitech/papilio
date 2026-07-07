@@ -1,6 +1,8 @@
 # Papilio
 
-Papilio is a database schema versioning tool for MongoDB, similar in spirit to [Liquibase](https://www.liquibase.org/). Database changes are declared in XML changelog files and applied sequentially. Each changeset is tracked in the database so that already-applied changes are skipped on subsequent runs.
+Papilio is a database schema versioning tool for MongoDB. Database changes are declared in XML changelog files and applied sequentially. Each changeset is tracked in the database so that already-applied changes are skipped on subsequent runs.
+
+Latest binary can be downloaded from [HERE](https://yukthitech.com/downloads/papilio/papilio-2.0.1-SNAPSHOT.zip)
 
 ## Features
 
@@ -19,13 +21,7 @@ Papilio is a database schema versioning tool for MongoDB, similar in spirit to [
 - **Replica set support** — Connect via `--replicas` or a single `--host` / `--port`.
 - **Authentication and SSL** — Optional username/password and `--enable-ssl`.
 
-## Building
 
-```bash
-mvn package
-```
-
-This produces a distributable zip under `dist/`. The distribution includes `papilio.sh` / `papilio.bat`, libraries under `lib/`, and logging configuration.
 
 ## Running
 
