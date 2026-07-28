@@ -1,8 +1,15 @@
 package com.yukthitech.papilio.mongo;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,11 +19,12 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.yukthitech.papilio.ChangeTracker;
@@ -27,9 +35,9 @@ import com.yukthitech.utils.CommonUtils;
  * Tests the usage with mongodb.
  * @author akiran
  */
-public class TMongoDb
+public class TestMongoDb
 {
-	private static Logger logger = LogManager.getLogger(TMongoDb.class);
+	private static Logger logger = LogManager.getLogger(TestMongoDb.class);
 	
 	/**
 	 * Mongo client connection.
@@ -45,17 +53,18 @@ public class TMongoDb
 	public void setup() throws Exception
 	{
 		Properties prop = new Properties();
-		prop.load(TMongoDb.class.getResourceAsStream("/mongodb.properties"));
+		prop.load(TestMongoDb.class.getResourceAsStream("/mongodb.properties"));
 		
 		String database = prop.getProperty("database");
 		String host = prop.getProperty("host");
 		int port = Integer.parseInt( prop.getProperty("port") );
 		
-		MongoClientOptions clientOptions = MongoClientOptions.builder()
+		MongoClientSettings clientSettings = MongoClientSettings.builder()
+				.applyToClusterSettings(builder -> builder.hosts(Arrays.asList(new ServerAddress(host, port))))
 				.writeConcern(WriteConcern.ACKNOWLEDGED)
 				.build();
 			
-		this.mongoClient = new MongoClient(new ServerAddress(host, port), clientOptions);
+		this.mongoClient = MongoClients.create(clientSettings);
 		this.database = mongoClient.getDatabase(database);
 		
 		cleandb();
@@ -68,6 +77,7 @@ public class TMongoDb
 		MongoCollection<Document> testCol =  database.getCollection("TEST_COL");
 		MongoCollection<Document> testCol2 =  database.getCollection("TEST_COL2");
 		MongoCollection<Document> testDocCol =  database.getCollection("TEST_DOC");
+		MongoCollection<Document> concurrentLockCol =  database.getCollection("CONCURRENT_LOCK_COL");
 		
 		if(changeLogCol != null)
 		{
@@ -98,6 +108,23 @@ public class TMongoDb
 			logger.debug("Dropping test doc table..");
 			testCol2.drop();
 		}
+
+		if(concurrentLockCol != null)
+		{
+			logger.debug("Dropping concurrent lock test table..");
+			concurrentLockCol.drop();
+		}
+	}
+	
+	private String[] mongoArgs(String changelog)
+	{
+		return new String[] {
+			"--host", "localhost",
+			"--port", "27017",
+			"--database", "test",
+			"--changelog", changelog,
+			"--dbtype", "mongo",
+		};
 	}
 
 	/**
@@ -372,6 +399,105 @@ public class TMongoDb
 		Document jsonPathDoc = testCol2.find(new org.bson.Document("name", "KranthiJsonPath")).first();
 		Assert.assertNotNull(jsonPathDoc);
 		Assert.assertEquals(jsonPathDoc.getString("testColId"), expectedId);
+	}
+
+	/**
+	 * Ensures a second execution waits when lock is held, then continues after release
+	 * instead of failing immediately with LOCK_FAILED.
+	 */
+	@Test(dependsOnMethods = "testBasicWorking")
+	public void testLockWaitUntilReleased() throws Exception
+	{
+		MongoCollection<Document> lockCol = database.getCollection("DATABASE_CHANGE_LOG_LOCK");
+		lockCol.deleteMany(new Document());
+		lockCol.insertOne(new Document("NAME", "LOCK"));
+
+		System.setProperty("papilio.lockRetryInterval", "200");
+		System.setProperty("papilio.lockWaitTimeout", "30000");
+
+		AtomicReference<ChangeTracker> trackerRef = new AtomicReference<>();
+		CountDownLatch started = new CountDownLatch(1);
+		CountDownLatch finished = new CountDownLatch(1);
+
+		try
+		{
+			Thread waiter = new Thread(() -> {
+				started.countDown();
+				trackerRef.set(Main.execute(mongoArgs("./src/test/resources/mongo/concurrent-lock.xml")));
+				finished.countDown();
+			}, "papilio-lock-waiter");
+
+			waiter.start();
+			Assert.assertTrue(started.await(5, TimeUnit.SECONDS));
+
+			// Give the waiter time to hit the held lock and enter retry loop
+			Thread.sleep(1500);
+
+			Assert.assertEquals(finished.getCount(), 1, "Execution should still be waiting for lock");
+
+			lockCol.deleteMany(new Document("NAME", "LOCK"));
+			Assert.assertTrue(finished.await(30, TimeUnit.SECONDS), "Execution did not finish after lock release");
+
+			ChangeTracker tracker = trackerRef.get();
+			Assert.assertNotNull(tracker);
+			Assert.assertEquals(tracker.getExitCode(), 0);
+			Assert.assertNotEquals(tracker.getErrorMessage(), ChangeTracker.LOCK_FAILED);
+			Assert.assertNull(tracker.getErroredChangesetId());
+			Assert.assertEquals(tracker.getExecutedCount(), 2);
+			Assert.assertEquals(database.getCollection("CONCURRENT_LOCK_COL").countDocuments(), 1);
+		} finally
+		{
+			System.clearProperty("papilio.lockRetryInterval");
+			System.clearProperty("papilio.lockWaitTimeout");
+			lockCol.deleteMany(new Document("NAME", "LOCK"));
+		}
+	}
+
+	/**
+	 * Ensures two concurrent papilio executions serialize via the lock table:
+	 * one executes changesets and the other waits, then skips already-applied ones.
+	 */
+	@Test(dependsOnMethods = "testLockWaitUntilReleased")
+	public void testConcurrentExecutionsWaitForLock() throws Exception
+	{
+		database.getCollection("CONCURRENT_LOCK_COL").drop();
+		database.getCollection("DATABASE_CHANGE_LOG").deleteMany(
+				new Document("CHANGE_SET_ID", new Document("$in", Arrays.asList(
+						"Creation of concurrent lock test table",
+						"Adding concurrent lock test record"))));
+		database.getCollection("DATABASE_CHANGE_LOG_LOCK").deleteMany(new Document());
+
+		System.setProperty("papilio.lockRetryInterval", "200");
+		System.setProperty("papilio.lockWaitTimeout", "60000");
+
+		String[] args = mongoArgs("./src/test/resources/mongo/concurrent-lock.xml");
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+
+		try
+		{
+			Future<ChangeTracker> first = executor.submit(() -> Main.execute(args));
+			Future<ChangeTracker> second = executor.submit(() -> Main.execute(args));
+
+			ChangeTracker tracker1 = first.get(60, TimeUnit.SECONDS);
+			ChangeTracker tracker2 = second.get(60, TimeUnit.SECONDS);
+
+			Assert.assertEquals(tracker1.getExitCode(), 0, "First concurrent execution failed: " + tracker1.getErrorMessage());
+			Assert.assertEquals(tracker2.getExitCode(), 0, "Second concurrent execution failed: " + tracker2.getErrorMessage());
+			Assert.assertNotEquals(tracker1.getErrorMessage(), ChangeTracker.LOCK_FAILED);
+			Assert.assertNotEquals(tracker2.getErrorMessage(), ChangeTracker.LOCK_FAILED);
+
+			// Across both runs, each changeset is executed once and skipped once
+			Assert.assertEquals(tracker1.getExecutedCount() + tracker2.getExecutedCount(), 2);
+			Assert.assertEquals(tracker1.getSkipCount() + tracker2.getSkipCount(), 2);
+
+			Assert.assertEquals(database.getCollection("CONCURRENT_LOCK_COL").countDocuments(), 1);
+			Assert.assertEquals(database.getCollection("DATABASE_CHANGE_LOG_LOCK").countDocuments(), 0);
+		} finally
+		{
+			executor.shutdownNow();
+			System.clearProperty("papilio.lockRetryInterval");
+			System.clearProperty("papilio.lockWaitTimeout");
+		}
 	}
 
 	@AfterClass

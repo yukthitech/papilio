@@ -27,20 +27,21 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCommandException;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.CreateCollectionOptions;
@@ -107,11 +108,11 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 		String database = args.getDbname();
 		
 		MongoCredential credential = (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password)) ? MongoCredential.createCredential(user, database, password.toCharArray()) : null;
-		List<ServerAddress> mongoHosts = null;
 
 		String host = args.getHost();
 		int port = args.getPort();
 		String replicas = args.getReplicas();
+		final List<ServerAddress> mongoHosts;
 		
 		if(StringUtils.isNotBlank(replicas))
 		{
@@ -127,19 +128,17 @@ public class MongoDbSchemaVersioner implements IDbSchemaVersioner
 			throw new InvalidArgumentException("Both replicas and host details are not specified.");
 		}
 		
-		MongoClientOptions clientOptions = MongoClientOptions.builder()
-				.writeConcern(WriteConcern.ACKNOWLEDGED)
-				.sslEnabled(args.isEnableSsl())
-				.build();
-				
+		MongoClientSettings.Builder settingsBuilder = MongoClientSettings.builder()
+				.applyToClusterSettings(builder -> builder.hosts(mongoHosts))
+				.applyToSslSettings(builder -> builder.enabled(args.isEnableSsl()))
+				.writeConcern(WriteConcern.ACKNOWLEDGED);
+		
 		if(credential != null)
 		{
-			this.mongoClient = new MongoClient(mongoHosts, credential, clientOptions);
+			settingsBuilder.credential(credential);
 		}
-		else
-		{
-			this.mongoClient = new MongoClient(mongoHosts, clientOptions);
-		}
+		
+		this.mongoClient = MongoClients.create(settingsBuilder.build());
 		
 		this.database = mongoClient.getDatabase(database);
 		MongoDbMethods.setDatabase(this.database);

@@ -58,6 +58,26 @@ public class DbChangeLogExecutor
 	private static final String FLD_CHANGE_SET_ID = "CHANGE_SET_ID";
 	
 	private static final String FLD_CHECKSUM = "CHECKSUM";
+	
+	/**
+	 * System property to override max time (ms) to wait for lock. Default: 5 minutes.
+	 */
+	private static final String PROP_LOCK_WAIT_TIMEOUT = "papilio.lockWaitTimeout";
+	
+	/**
+	 * System property to override retry interval (ms) while waiting for lock. Default: 1 second.
+	 */
+	private static final String PROP_LOCK_RETRY_INTERVAL = "papilio.lockRetryInterval";
+	
+	/**
+	 * Default max wait for lock acquisition.
+	 */
+	private static final long DEFAULT_LOCK_WAIT_TIMEOUT_MS = 5 * 60 * 1000L;
+	
+	/**
+	 * Default interval between lock acquisition retries.
+	 */
+	private static final long DEFAULT_LOCK_RETRY_INTERVAL_MS = 1000L;
 
 	private DatabaseChangeLog databaseChangeLog;
 	
@@ -97,17 +117,20 @@ public class DbChangeLogExecutor
 		logger.debug("Initalizing db versioner..");
 		init();
 		
-		Map<String, String> curChangesetMap = dbSchemaVersioner.fetchCurrentChangeSet(DBLOG_COLLECTION, FLD_CHANGE_SET_ID, FLD_CHECKSUM);
 		List<ChangeSet> changeSetLst = databaseChangeLog.getChangeSets(); 
 
 		if(!lock())
 		{
 			changeTracker.erroredChangeset(null, ChangeTracker.LOCK_FAILED);
+			dbSchemaVersioner.close();
 			return false;
 		}
 		
 		try
 		{
+			// Fetch after lock so concurrent executions see changes applied by the previous holder
+			Map<String, String> curChangesetMap = dbSchemaVersioner.fetchCurrentChangeSet(DBLOG_COLLECTION, FLD_CHANGE_SET_ID, FLD_CHECKSUM);
+			
 			for(ChangeSet changeSet : changeSetLst)
 			{
 				if(!executeChangeSet(changeSet, curChangesetMap))
@@ -134,7 +157,9 @@ public class DbChangeLogExecutor
 		if(!isDbLogPresent)
 		{
 			logger.debug("As db-log table not found, createing new table: {}", DBLOG_COLLECTION);
-			dbSchemaVersioner.createTable(new CreateTableChange(DBLOG_COLLECTION));
+			CreateTableChange createLogTable = new CreateTableChange(DBLOG_COLLECTION);
+			createLogTable.setIgnoreIfExists(true);
+			dbSchemaVersioner.createTable(createLogTable);
 			dbSchemaVersioner.createIndex(new CreateIndexChange(DBLOG_COLLECTION + "_CSET_ID", DBLOG_COLLECTION, true, FLD_CHANGE_SET_ID));
 		}
 		
@@ -142,26 +167,79 @@ public class DbChangeLogExecutor
 		{
 			logger.debug("As db-log-lock table not found, createing new table: {}", DBLOG_LOCK_COLLECTION);
 			
-			dbSchemaVersioner.createTable(new CreateTableChange(DBLOG_LOCK_COLLECTION));
+			CreateTableChange createLockTable = new CreateTableChange(DBLOG_LOCK_COLLECTION);
+			createLockTable.setIgnoreIfExists(true);
+			dbSchemaVersioner.createTable(createLockTable);
 			dbSchemaVersioner.createIndex(new CreateIndexChange(DBLOG_LOCK_COLLECTION + "_NAME", DBLOG_LOCK_COLLECTION, true, "NAME"));
+		}
+	}
+	
+	private long getLongProperty(String name, long defaultValue)
+	{
+		String value = System.getProperty(name);
+		
+		if(value == null || value.trim().isEmpty())
+		{
+			return defaultValue;
+		}
+		
+		try
+		{
+			return Long.parseLong(value.trim());
+		}catch(NumberFormatException ex)
+		{
+			logger.warn("Invalid value for system property '{}': {}. Using default: {}", name, value, defaultValue);
+			return defaultValue;
 		}
 	}
 	
 	private boolean lock()
 	{
 		InsertChange insert = new InsertChange(DBLOG_LOCK_COLLECTION, "NAME", "LOCK");
+		long waitTimeoutMs = getLongProperty(PROP_LOCK_WAIT_TIMEOUT, DEFAULT_LOCK_WAIT_TIMEOUT_MS);
+		long retryIntervalMs = getLongProperty(PROP_LOCK_RETRY_INTERVAL, DEFAULT_LOCK_RETRY_INTERVAL_MS);
+		long startTime = System.currentTimeMillis();
+		boolean waitingLogged = false;
 		
-		try
+		while(true)
 		{
-			dbSchemaVersioner.insert(insert);
-			logger.info("Obtained db lock successfully..");
-		}catch(Exception ex)
-		{
-			logger.error("Failed to obtained lock on the db. Please clean the entries from {} manually in case abrupt close last time.", DBLOG_LOCK_COLLECTION, ex);
-			return false;
+			try
+			{
+				dbSchemaVersioner.insert(insert);
+				logger.info("Obtained db lock successfully..");
+				return true;
+			}catch(Exception ex)
+			{
+				long elapsed = System.currentTimeMillis() - startTime;
+				
+				if(elapsed >= waitTimeoutMs)
+				{
+					logger.error("Failed to obtain lock on the db after waiting {} ms. Please clean the entries from {} manually in case abrupt close last time.", 
+							elapsed, DBLOG_LOCK_COLLECTION, ex);
+					return false;
+				}
+				
+				if(!waitingLogged)
+				{
+					logger.info("Db lock is currently held by another execution. Waiting for it to be released (timeout: {} ms, retry every: {} ms)..", 
+							waitTimeoutMs, retryIntervalMs);
+					waitingLogged = true;
+				}
+				else
+				{
+					logger.debug("Still waiting for db lock to be released. Elapsed: {} ms", elapsed);
+				}
+				
+				try
+				{
+					Thread.sleep(retryIntervalMs);
+				}catch(InterruptedException iex)
+				{
+					logger.error("Interrupted while waiting for db lock.", iex);
+					return false;
+				}
+			}
 		}
-		
-		return true;
 	}
 	
 	private void unlock()
