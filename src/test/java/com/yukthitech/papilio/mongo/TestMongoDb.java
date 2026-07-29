@@ -29,6 +29,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.yukthitech.papilio.ChangeTracker;
 import com.yukthitech.papilio.Main;
+import com.yukthitech.papilio.common.PapilioArguments;
 import com.yukthitech.utils.CommonUtils;
 
 /**
@@ -171,13 +172,12 @@ public class TestMongoDb
 	@Test(dependsOnMethods = "testBasicWorking")
 	public void testReexecute()
 	{
-		ChangeTracker tracker = Main.execute(new String[] {
-				"--host", "localhost",
-				"--port", "27017",
-				"--database", "test",
-				"--changelog", "./src/test/resources/mongo/basic-working.xml",
-				"--dbtype", "mongo"
-			});
+		ChangeTracker tracker = Main.execute(new PapilioArguments()
+			.setHost("localhost")
+			.setPort(27017)
+			.setDbname("test")
+			.setChangeLogFile("./src/test/resources/mongo/basic-working.xml")
+			.setDbType("mongo"));
 		
 		Assert.assertEquals(tracker.getExitCode(), 0);
 		Assert.assertEquals(tracker.getTotalCount(), 4);

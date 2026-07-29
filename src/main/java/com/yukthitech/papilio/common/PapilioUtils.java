@@ -79,6 +79,7 @@ public class PapilioUtils
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public static Map<String, Object> loadXml(File fileObj)
 	{
 		if(!fileObj.exists())

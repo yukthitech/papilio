@@ -72,9 +72,10 @@ public class ChangeTracker
 	 *
 	 * @param totalCount the new total number of changeset loaded
 	 */
-	public void setTotalCount(int totalCount)
+	public ChangeTracker setTotalCount(int totalCount)
 	{
 		this.totalCount = totalCount;
+		return this;
 	}
 
 	/**
@@ -91,9 +92,10 @@ public class ChangeTracker
 	 * Called when a changeset is being skipped.
 	 * @param changesetId
 	 */
-	public void skippingChangeset(String changesetId)
+	public ChangeTracker skippingChangeset(String changesetId)
 	{
 		this.skipCount++;
+		return this;
 	}
 
 	/**
@@ -110,9 +112,10 @@ public class ChangeTracker
 	 * Called when a changeset is executed successfully.
 	 * @param changesetId
 	 */
-	public void executedChangeset(String changesetId)
+	public ChangeTracker executedChangeset(String changesetId)
 	{
 		this.executedCount++;
+		return this;
 	}
 
 	/**
@@ -130,9 +133,10 @@ public class ChangeTracker
 	 *
 	 * @param errorMessage the new error message which resulted in execution error, if any
 	 */
-	public void setErrorMessage(String errorMessage)
+	public ChangeTracker setErrorMessage(String errorMessage)
 	{
 		this.errorMessage = errorMessage;
+		return this;
 	}
 	
 	/**
@@ -150,9 +154,10 @@ public class ChangeTracker
 	 *
 	 * @param exitCode the new exit code to be used
 	 */
-	public void setExitCode(int exitCode)
+	public ChangeTracker setExitCode(int exitCode)
 	{
 		this.exitCode = exitCode;
+		return this;
 	}
 
 	/**
@@ -171,9 +176,10 @@ public class ChangeTracker
 	 * @param changesetId
 	 * @param errorMssg
 	 */
-	public void erroredChangeset(String changesetId, String errorMssg)
+	public ChangeTracker erroredChangeset(String changesetId, String errorMssg)
 	{
 		this.erroredChangesetId = changesetId;
 		this.errorMessage = errorMssg;
+		return this;
 	}
 }

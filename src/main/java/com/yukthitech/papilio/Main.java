@@ -103,7 +103,7 @@ public class Main
 		try
 		{
 			Class<?> cls = Class.forName(verClsName);
-			dbSchemaVersioner = (IDbSchemaVersioner) cls.newInstance();
+			dbSchemaVersioner = (IDbSchemaVersioner) cls.getConstructor().newInstance();
 		}catch(Exception ex)
 		{
 			System.err.println("An error occurred while creating db-schema-version instance: " + verClsName + "\nError: " + ex);
@@ -137,9 +137,19 @@ public class Main
 		return res;
 	}
 	
-	public static ChangeTracker execute(String[] args)
+	public static ChangeTracker execute(PapilioArguments argumentBean)
 	{
-		PapilioArguments argumentBean = loadArguments(args);
+		try
+		{
+			argumentBean.validate();
+		}catch(Exception ex)
+		{
+			System.err.println("Invalid arguments: " + ex.getMessage());
+			logger.error("Invalid arguments: " + ex.getMessage());
+			return new ChangeTracker().setExitCode(-1)
+				.setErrorMessage(ex.getMessage());
+		}
+
 		Properties mappingProp = loadMappingProperties();
 		
 		String dbType = argumentBean.getDbType();
@@ -152,8 +162,7 @@ public class Main
 		if(versionCls == null)
 		{
 			System.err.println("Invalid db type specified: " + dbType);
-			changeTracker.setExitCode(-1);
-			return changeTracker;
+			return changeTracker.setExitCode(-1);
 		}
 
 		try
@@ -168,6 +177,12 @@ public class Main
 		boolean res = executeChangeLog(versionCls, argumentBean.getChangeLogFile(), argumentBean, changeTracker);
 		changeTracker.setExitCode(res ? 0 : -1);
 		return changeTracker;
+	}
+	
+	public static ChangeTracker execute(String[] args)
+	{
+		PapilioArguments argumentBean = loadArguments(args);
+		return execute(argumentBean);
 	}
 
 	public static void main(String[] args)

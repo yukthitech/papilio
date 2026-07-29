@@ -15,6 +15,8 @@
  */
 package com.yukthitech.papilio.common;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.yukthitech.utils.cli.CliArgument;
 
 /**
@@ -95,9 +97,10 @@ public class PapilioArguments
 	 * @param host
 	 *            the new db server host
 	 */
-	public void setHost(String host)
+	public PapilioArguments setHost(String host)
 	{
 		this.host = host;
+		return this;
 	}
 
 	/**
@@ -116,9 +119,10 @@ public class PapilioArguments
 	 * @param port
 	 *            the new db server port
 	 */
-	public void setPort(Integer port)
+	public PapilioArguments setPort(Integer port)
 	{
 		this.port = port;
+		return this;
 	}
 
 	/**
@@ -137,9 +141,10 @@ public class PapilioArguments
 	 * @param dbname
 	 *            the new default database to be used
 	 */
-	public void setDbname(String dbname)
+	public PapilioArguments setDbname(String dbname)
 	{
 		this.dbname = dbname;
+		return this;
 	}
 
 	/**
@@ -158,9 +163,10 @@ public class PapilioArguments
 	 * @param userName
 	 *            the new username to be used for authentication
 	 */
-	public void setUserName(String userName)
+	public PapilioArguments setUserName(String userName)
 	{
 		this.userName = userName;
+		return this;
 	}
 
 	/**
@@ -179,9 +185,10 @@ public class PapilioArguments
 	 * @param password
 	 *            the new password to be used for authentication
 	 */
-	public void setPassword(String password)
+	public PapilioArguments setPassword(String password)
 	{
 		this.password = password;
+		return this;
 	}
 
 	/**
@@ -200,9 +207,10 @@ public class PapilioArguments
 	 * @param dbType
 	 *            the new db type
 	 */
-	public void setDbType(String dbType)
+	public PapilioArguments setDbType(String dbType)
 	{
 		this.dbType = dbType;
+		return this;
 	}
 
 	/**
@@ -221,9 +229,10 @@ public class PapilioArguments
 	 * @param changeLogFile
 	 *            the new change log file to be processed
 	 */
-	public void setChangeLogFile(String changeLogFile)
+	public PapilioArguments setChangeLogFile(String changeLogFile)
 	{
 		this.changeLogFile = changeLogFile;
+		return this;
 	}
 
 	/**
@@ -241,9 +250,10 @@ public class PapilioArguments
 	 *
 	 * @param replicas the new db replicas to be used
 	 */
-	public void setReplicas(String replicas)
+	public PapilioArguments setReplicas(String replicas)
 	{
 		this.replicas = replicas;
+		return this;
 	}
 
 	/**
@@ -266,8 +276,31 @@ public class PapilioArguments
 	 *            the new if true, then it will indicate the db connectivity
 	 *            should happen via SSL
 	 */
-	public void setEnableSsl(boolean enableSsl)
+	public PapilioArguments setEnableSsl(boolean enableSsl)
 	{
 		this.enableSsl = enableSsl;
+		return this;
 	}
+
+	public void validate()
+	{
+		if(this.getDbType().equals("mongo"))
+		{
+			if(StringUtils.isBlank(host) && StringUtils.isBlank(replicas))
+			{
+				throw new IllegalArgumentException("Host or replicas are required for mongo database");
+			}
+
+			if(StringUtils.isBlank(dbname))
+			{
+				throw new IllegalArgumentException("Database name is required for mongo database");
+			}
+		}
+
+		if(StringUtils.isBlank(changeLogFile))
+		{
+			throw new IllegalArgumentException("Change log file is required");
+		}
+	}
+
 }
