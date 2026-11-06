@@ -23,8 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yukthitech.ccg.xml.DynamicBean;
 import com.yukthitech.ccg.xml.DynamicBeanParserHandler;
 import com.yukthitech.ccg.xml.XMLBeanParser;
-import com.yukthitech.jexpr.JsonExprEngine;
 import com.yukthitech.papilio.mongo.MongoDbMethods;
+import com.yukthitech.transform.TransformEngine;
+import com.yukthitech.transform.template.JsonTemplateFactory;
+import com.yukthitech.transform.template.TransformTemplate;
 import com.yukthitech.utils.exceptions.InvalidArgumentException;
 import com.yukthitech.utils.exceptions.InvalidStateException;
 import com.yukthitech.utils.fmarker.FreeMarkerEngine;
@@ -49,12 +51,18 @@ public class PapilioUtils
 	/**
 	 * For jel template processing.
 	 */
-	private static JsonExprEngine jsonExprEngine = new JsonExprEngine();
+	private static JsonTemplateFactory jsonTemplateFactory;
+	
+	/**
+	 * Transformation engine for jel template processing.
+	 */
+	private static TransformEngine transformEngine;
 
 	static
 	{
 		freeMarkerEngine.loadClass(MongoDbMethods.class);
-		jsonExprEngine.setFreeMarkerEngine(freeMarkerEngine);
+		jsonTemplateFactory = new JsonTemplateFactory(freeMarkerEngine);
+		transformEngine = new TransformEngine(freeMarkerEngine);
 	}
 
 	public static Object parseJson(String json)
@@ -114,6 +122,7 @@ public class PapilioUtils
 	
 	public static String processJelTemplate(String jsonTemplate, Map<String, Object> context)
 	{
-		return jsonExprEngine.processJson(jsonTemplate, context);
+		TransformTemplate template = jsonTemplateFactory.parseTemplate("jel-template", jsonTemplate);
+		return transformEngine.processAsString(template, context);
 	}
 }
